@@ -1,4 +1,4 @@
-const NATIVE_HOST = "com.tuwel.2fa";
+const NATIVE_HOST = "com.tuwien.2fa";
 
 function base32Decode(str) {
   const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

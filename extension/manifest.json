@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "TUWEL Auto 2FA",
+  "name": "TUWien Auto 2FA",
   "version": "1.0.0",
-  "description": "Automatically fills the Multi-Factor Authentication code for TUWEL login",
+  "description": "Automatically fills the Multi-Factor Authentication code for TUWien login",
   "browser_specific_settings": {
     "gecko": {
-      "id": "tuwel-auto-2fa@tuwel.app",
+      "id": "tuwien-auto-2fa@tuwien.ac.at",
       "strict_min_version": "128.0"
     }
   },
@@ -28,7 +28,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "TUWEL Auto 2FA",
+    "default_title": "TUWien Auto 2FA",
     "default_icon": "icons/icon.svg"
   },
   "icons": {

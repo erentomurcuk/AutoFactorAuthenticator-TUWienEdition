@@ -1,7 +1,7 @@
-# TUWEL Auto 2FA
+# TUWien Auto 2FA
 
 Firefox extension that automatically fills the Multi-Factor Authentication code
-for TUWEL login (TU Wien e-Learning platform).
+for TUWien login.
 
 The TOTP seed is stored securely in your **OS keychain** (Apple Keychain /
 KDE Wallet / GNOME Keyring / Windows Credential Manager) via a tiny Rust native
@@ -10,7 +10,7 @@ messaging host. It never leaves your device and is never sent to the cloud.
 ## How it works
 
 ```
-TUWEL login page (idp.zid.tuwien.ac.at)
+TUWien login page (idp.zid.tuwien.ac.at)
        │
        ▼  detects #totp input field
 Content Script
@@ -60,8 +60,8 @@ to the correct location for your OS. On macOS it builds a universal binary
 
 ```bash
 # From the project root
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Or manually:
@@ -85,11 +85,11 @@ the TOTP code. You still need to click the login/submit button yourself.
 ## Project structure
 
 ```
-TUWEL-Auto-2FA/
+TUWien-Auto-2FA/
 ├── extension/              # Firefox extension (plain JS, no bundler)
 │   ├── manifest.json       # MV3 extension manifest
 │   ├── background.js       # TOTP generation, native messaging bridge
-│   ├── content_script.js   # Detects #totp field on TUWEL pages
+│   ├── content_script.js   # Detects #totp field on TUWien pages
 │   ├── popup/              # Extension popup UI
 │   │   ├── popup.html
 │   │   └── popup.js
@@ -114,7 +114,7 @@ TUWEL-Auto-2FA/
 ## Building for distribution
 
 ```bash
-npm run build
+pnpm run build
 # Creates a .zip in web-ext-artifacts/
 ```
 

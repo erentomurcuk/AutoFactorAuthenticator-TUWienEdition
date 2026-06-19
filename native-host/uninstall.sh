@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-HOST_NAME="com.tuwel.2fa"
+HOST_NAME="com.tuwien.2fa"
 
 detect_os() {
   case "$(uname -s)" in

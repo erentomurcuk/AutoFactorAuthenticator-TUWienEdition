@@ -2,8 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-EXTENSION_ID="tuwel-auto-2fa@tuwel.app"
-HOST_NAME="com.tuwel.2fa"
+EXTENSION_ID="tuwien-auto-2fa@tuwien.ac.at"
+HOST_NAME="com.tuwien.2fa"
+BINARY_NAME="tuwien-2fa-native"
 
 detect_os() {
   case "$(uname -s)" in
@@ -31,10 +32,10 @@ build_macos_universal() {
   echo "  Building for aarch64-apple-darwin..."
   cargo build --release --target aarch64-apple-darwin
   mkdir -p "$SCRIPT_DIR/target/universal"
-  lipo -create -output "$SCRIPT_DIR/target/universal/$HOST_NAME" \
-    "$SCRIPT_DIR/target/x86_64-apple-darwin/release/$HOST_NAME" \
-    "$SCRIPT_DIR/target/aarch64-apple-darwin/release/$HOST_NAME"
-  BINARY_PATH="$SCRIPT_DIR/target/universal/$HOST_NAME"
+  lipo -create -output "$SCRIPT_DIR/target/universal/$BINARY_NAME" \
+    "$SCRIPT_DIR/target/x86_64-apple-darwin/release/$BINARY_NAME" \
+    "$SCRIPT_DIR/target/aarch64-apple-darwin/release/$BINARY_NAME"
+  BINARY_PATH="$SCRIPT_DIR/target/universal/$BINARY_NAME"
   echo "  Created universal binary at $BINARY_PATH"
 }
 
@@ -42,7 +43,7 @@ build_native() {
   local os="$1"
   echo "Building for $os..."
   cargo build --release
-  BINARY_PATH="$SCRIPT_DIR/target/release/$HOST_NAME"
+  BINARY_PATH="$SCRIPT_DIR/target/release/$BINARY_NAME"
   if [ "$os" = "windows" ]; then
     BINARY_PATH="${BINARY_PATH}.exe"
   fi
@@ -56,7 +57,7 @@ install_manifest() {
   cat > "$manifest_dir/$HOST_NAME.json" << EOF
 {
   "name": "$HOST_NAME",
-  "description": "Native host for TUWEL Auto 2FA - stores TOTP seed in OS keychain",
+  "description": "Native host for TUWien Auto 2FA - stores TOTP seed in OS keychain",
   "path": "$binary_path",
   "type": "stdio",
   "allowed_extensions": ["$EXTENSION_ID"]
@@ -66,7 +67,7 @@ EOF
 }
 
 main() {
-  echo "=== TUWEL Auto 2FA - Native Host Installer ==="
+  echo "=== TUWien Auto 2FA - Native Host Installer ==="
   local os
   os=$(detect_os)
   echo "Detected OS: $os"
