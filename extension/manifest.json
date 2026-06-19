@@ -14,14 +14,14 @@
     "storage"
   ],
   "host_permissions": [
-    "https://idp.zid.tuwien.ac.at/*"
+    "https://idp.zid.tuwien.ac.at/simplesaml/*"
   ],
   "background": {
     "scripts": ["background.js"]
   },
   "content_scripts": [
     {
-      "matches": ["https://idp.zid.tuwien.ac.at/*"],
+      "matches": ["https://idp.zid.tuwien.ac.at/simplesaml/*"],
       "js": ["content_script.js"],
       "run_at": "document_idle"
     }
