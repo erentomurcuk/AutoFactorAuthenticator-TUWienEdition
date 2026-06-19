@@ -10,8 +10,7 @@
     }
   },
   "permissions": [
-    "nativeMessaging",
-    "storage"
+    "nativeMessaging"
   ],
   "host_permissions": [
     "https://idp.zid.tuwien.ac.at/simplesaml/*"

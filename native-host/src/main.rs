@@ -94,6 +94,8 @@ fn unknown_command(_cmd: &str) -> Response {
 }
 
 fn main() -> io::Result<()> {
+    let _ = keyring::Entry::new("TUWien Auto 2FA", SEED_KEY)
+        .and_then(|e| e.delete_credential());
     loop {
         let msg = match read_message()? {
             Some(m) => m,

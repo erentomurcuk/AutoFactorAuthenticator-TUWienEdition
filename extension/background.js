@@ -41,8 +41,20 @@ async function generateTOTP(seed) {
 
 let lastTOTP = null;
 let lastCounter = -1;
+let clearTimer = null;
+
+function cacheTOTP(code, counter) {
+  lastTOTP = code;
+  lastCounter = counter;
+  if (clearTimer) clearTimeout(clearTimer);
+  clearTimer = setTimeout(() => {
+    lastTOTP = null;
+    lastCounter = -1;
+  }, 31000);
+}
 
 browser.runtime.onMessage.addListener((msg, sender) => {
+  if (sender.id !== browser.runtime.id) return;
   if (msg.type === "request_totp") {
     const counter = Math.floor(Date.now() / 1000 / 30);
     if (lastTOTP && lastCounter === counter) {
@@ -51,8 +63,7 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "get_seed" }).then(async (response) => {
       if (response.status === "ok" && response.data) {
         const code = await generateTOTP(response.data);
-        lastTOTP = code;
-        lastCounter = counter;
+        cacheTOTP(code, counter);
         return code;
       }
       throw new Error(response.message || "Seed not configured");
@@ -60,7 +71,8 @@ browser.runtime.onMessage.addListener((msg, sender) => {
   }
 });
 
-browser.runtime.onMessage.addListener((msg) => {
+browser.runtime.onMessage.addListener((msg, sender) => {
+  if (sender.id !== browser.runtime.id) return;
   if (msg.type === "check_configured") {
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "check" }).then((r) => ({
       configured: r.status === "ok" && !!r.data,
