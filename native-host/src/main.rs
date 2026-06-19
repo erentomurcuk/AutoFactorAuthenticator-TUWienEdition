@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 const SERVICE: &str = "TUWien Auto 2FA";
 const SEED_KEY: &str = "totp_seed";
-const APP_NAME: &str = "com.tuwien.2fa";
 const MAX_MESSAGE_SIZE: usize = 4_194_304;
 const MAX_SEED_SIZE: usize = 256;
 const MIN_SEED_SIZE: usize = 16;
@@ -107,7 +106,7 @@ fn main() -> io::Result<()> {
                 message: None,
             },
             "check" => {
-                match keyring::Entry::new_with_target(APP_NAME, SERVICE, SEED_KEY) {
+                match keyring::Entry::new(SERVICE, SEED_KEY) {
                     Ok(entry) => {
                         match entry.get_password() {
                             Ok(_) => keyring_ok(),
@@ -121,7 +120,7 @@ fn main() -> io::Result<()> {
                 }
             }
             "get_seed" => {
-                match keyring::Entry::new_with_target(APP_NAME, SERVICE, SEED_KEY) {
+                match keyring::Entry::new(SERVICE, SEED_KEY) {
                     Ok(entry) => {
                         match entry.get_password() {
                             Ok(pw) => Response { status: "ok".into(), data: Some(pw), message: None },
@@ -144,7 +143,7 @@ fn main() -> io::Result<()> {
                     write_message(&invalid_seed())?;
                     continue;
                 }
-                match keyring::Entry::new_with_target(APP_NAME, SERVICE, SEED_KEY) {
+                match keyring::Entry::new(SERVICE, SEED_KEY) {
                     Ok(entry) => {
                         match entry.set_password(seed) {
                             Ok(()) => Response { status: "ok".into(), data: None, message: None },
@@ -155,7 +154,7 @@ fn main() -> io::Result<()> {
                 }
             }
             "delete_seed" => {
-                match keyring::Entry::new_with_target(APP_NAME, SERVICE, SEED_KEY) {
+                match keyring::Entry::new(SERVICE, SEED_KEY) {
                     Ok(entry) => {
                         match entry.delete_credential() {
                             Ok(()) => Response { status: "ok".into(), data: None, message: None },

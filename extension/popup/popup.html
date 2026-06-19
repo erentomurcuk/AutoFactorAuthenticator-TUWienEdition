@@ -38,7 +38,7 @@
   <div id="setupView" class="hidden">
     <label for="seedInput">Paste your TOTP secret key (base32)</label>
     <textarea id="seedInput" placeholder="e.g. JBSWY3DPEHPK3PXP"></textarea>
-    <div class="hint">Your secret key stays in your OS keychain (Apple Keychain / KDE Wallet / libsecret). Never leaves your device.</div>
+    <div class="hint">Your secret key stays in your <span id="keychainName">keychain</span>. Never leaves your device.</div>
     <button id="saveBtn" class="btn-primary" disabled>Save to Keychain</button>
   </div>
 

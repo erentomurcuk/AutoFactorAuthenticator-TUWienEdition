@@ -10,6 +10,15 @@ function setStatus(text, type) {
   statusEl.className = "status " + type;
 }
 
+function getKeychainName(os) {
+  switch (os) {
+    case "mac":  return "Apple Keychain";
+    case "win":  return "Windows Credential Manager";
+    case "linux": return "GNOME Keyring / KDE Wallet";
+    default:     return "OS keychain";
+  }
+}
+
 function isValidBase32(str) {
   return /^[A-Z2-7]+=*$/i.test(str.replace(/[\s-]/g, ""));
 }
@@ -19,6 +28,9 @@ seedInput.addEventListener("input", () => {
 });
 
 async function init() {
+  browser.runtime.getPlatformInfo().then((info) => {
+    document.getElementById("keychainName").textContent = getKeychainName(info.os);
+  });
   try {
     const result = await browser.runtime.sendMessage({ type: "check_configured" });
     if (result.configured) {
