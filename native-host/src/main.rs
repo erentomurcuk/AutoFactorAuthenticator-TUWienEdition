@@ -1,0 +1,190 @@
+use std::io::{self, Read, Write};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use serde::{Deserialize, Serialize};
+
+const SERVICE: &str = "TUWEL Auto 2FA";
+const SEED_KEY: &str = "totp_seed";
+const APP_NAME: &str = "com.tuwel.2fa";
+
+#[derive(Deserialize)]
+struct Request {
+    command: String,
+    seed: Option<String>,
+}
+
+#[derive(Serialize)]
+struct Response {
+    status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<String>,
+}
+
+fn read_message() -> io::Result<Option<Request>> {
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+    let len = match handle.read_u32::<LittleEndian>() {
+        Ok(len) => len as usize,
+        Err(ref e) if e.kind() == io::ErrorKind::UnexpectedEof => return Ok(None),
+        Err(e) => return Err(e),
+    };
+    let mut buf = vec![0u8; len];
+    handle.read_exact(&mut buf)?;
+    Ok(Some(serde_json::from_slice(&buf).map_err(|e| {
+        io::Error::new(io::ErrorKind::InvalidData, e)
+    })?))
+}
+
+fn write_message(msg: &Response) -> io::Result<()> {
+    let data = serde_json::to_vec(msg).map_err(|e| {
+        io::Error::new(io::ErrorKind::Other, e)
+    })?;
+    let stdout = io::stdout();
+    let mut handle = stdout.lock();
+    handle.write_u32::<LittleEndian>(data.len() as u32)?;
+    handle.write_all(&data)?;
+    handle.flush()?;
+    Ok(())
+}
+
+fn main() -> io::Result<()> {
+    loop {
+        let msg = match read_message()? {
+            Some(m) => m,
+            None => break,
+        };
+        let response = match msg.command.as_str() {
+            "ping" => Response {
+                status: "ok".into(),
+                data: Some("pong".into()),
+                message: None,
+            },
+            "check" => {
+                match keyring::Entry::new(SERVICE, SEED_KEY, APP_NAME) {
+                    Ok(entry) => {
+                        match entry.get_password() {
+                            Ok(_) => Response {
+                                status: "ok".into(),
+                                data: Some("configured".into()),
+                                message: None,
+                            },
+                            Err(keyring::Error::NoEntry) => Response {
+                                status: "ok".into(),
+                                data: None,
+                                message: Some("No seed configured".into()),
+                            },
+                            Err(e) => Response {
+                                status: "error".into(),
+                                data: None,
+                                message: Some(e.to_string()),
+                            },
+                        }
+                    }
+                    Err(e) => Response {
+                        status: "error".into(),
+                        data: None,
+                        message: Some(e.to_string()),
+                    },
+                }
+            }
+            "get_seed" => {
+                match keyring::Entry::new(SERVICE, SEED_KEY, APP_NAME) {
+                    Ok(entry) => {
+                        match entry.get_password() {
+                            Ok(pw) => Response {
+                                status: "ok".into(),
+                                data: Some(pw),
+                                message: None,
+                            },
+                            Err(keyring::Error::NoEntry) => Response {
+                                status: "error".into(),
+                                data: None,
+                                message: Some("No seed configured".into()),
+                            },
+                            Err(e) => Response {
+                                status: "error".into(),
+                                data: None,
+                                message: Some(e.to_string()),
+                            },
+                        }
+                    }
+                    Err(e) => Response {
+                        status: "error".into(),
+                        data: None,
+                        message: Some(e.to_string()),
+                    },
+                }
+            }
+            "store_seed" => {
+                let seed = match msg.seed {
+                    Some(s) => s,
+                    None => {
+                        write_message(&Response {
+                            status: "error".into(),
+                            data: None,
+                            message: Some("Missing seed".into()),
+                        })?;
+                        continue;
+                    }
+                };
+                match keyring::Entry::new(SERVICE, SEED_KEY, APP_NAME) {
+                    Ok(entry) => {
+                        match entry.set_password(&seed) {
+                            Ok(()) => Response {
+                                status: "ok".into(),
+                                data: None,
+                                message: None,
+                            },
+                            Err(e) => Response {
+                                status: "error".into(),
+                                data: None,
+                                message: Some(e.to_string()),
+                            },
+                        }
+                    }
+                    Err(e) => Response {
+                        status: "error".into(),
+                        data: None,
+                        message: Some(e.to_string()),
+                    },
+                }
+            }
+            "delete_seed" => {
+                match keyring::Entry::new(SERVICE, SEED_KEY, APP_NAME) {
+                    Ok(entry) => {
+                        match entry.delete_password() {
+                            Ok(()) => Response {
+                                status: "ok".into(),
+                                data: None,
+                                message: None,
+                            },
+                            Err(keyring::Error::NoEntry) => Response {
+                                status: "ok".into(),
+                                data: None,
+                                message: None,
+                            },
+                            Err(e) => Response {
+                                status: "error".into(),
+                                data: None,
+                                message: Some(e.to_string()),
+                            },
+                        }
+                    }
+                    Err(e) => Response {
+                        status: "error".into(),
+                        data: None,
+                        message: Some(e.to_string()),
+                    },
+                }
+            }
+            _ => Response {
+                status: "error".into(),
+                data: None,
+                message: Some(format!("Unknown command: {}", msg.command)),
+            },
+        };
+        write_message(&response)?;
+    }
+    Ok(())
+}

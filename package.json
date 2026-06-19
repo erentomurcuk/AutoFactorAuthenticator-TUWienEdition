@@ -1,0 +1,14 @@
+{
+  "name": "tuwel-auto-2fa",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "web-ext run --source-dir extension",
+    "build": "web-ext build --source-dir extension",
+    "lint": "web-ext lint --source-dir extension",
+    "install-host": "cd native-host && bash install.sh"
+  },
+  "devDependencies": {
+    "web-ext": "^8.0.0"
+  }
+}
