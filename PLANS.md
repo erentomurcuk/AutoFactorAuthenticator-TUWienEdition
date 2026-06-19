@@ -50,6 +50,13 @@ Content Script (watches #totp) → Background (TOTP via Web Crypto) ↔ Native M
 - `web-ext sign` for Mozilla add-on signing (requires AMO account)
 - Could bundle the .app + extension in a single .dmg
 
+## Fixed issues
+
+- **2025-06-20**: `keyring` crate was using **mock backend** on macOS (no `apple-native` feature).
+  `set_password` returned `Ok(())` but stored nothing — data lost on process exit.
+  Fixed: added `features = ["apple-native"]` for macOS, `["windows-native"]` for Windows,
+  `["sync-secret-service"]` for Linux in `Cargo.toml` via target-specific dependencies.
+
 ## Security notes
 
 | Concern | Current approach |
