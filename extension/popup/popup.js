@@ -4,6 +4,9 @@ const setupView = document.getElementById("setupView");
 const seedInput = document.getElementById("seedInput");
 const saveBtn = document.getElementById("saveBtn");
 const deleteBtn = document.getElementById("deleteBtn");
+const confirmDelete = document.getElementById("confirmDelete");
+const confirmYesBtn = document.getElementById("confirmYesBtn");
+const confirmNoBtn = document.getElementById("confirmNoBtn");
 let currentOS = null;
 
 function setStatus(text, type) {
@@ -81,24 +84,37 @@ saveBtn.addEventListener("click", async () => {
   }
 });
 
-deleteBtn.addEventListener("click", async () => {
-  if (!confirm("Remove the TOTP seed from your keychain?")) return;
-  deleteBtn.disabled = true;
+deleteBtn.addEventListener("click", () => {
+  deleteBtn.classList.add("hidden");
+  confirmDelete.classList.remove("hidden");
+});
+
+confirmNoBtn.addEventListener("click", () => {
+  confirmDelete.classList.add("hidden");
+  deleteBtn.classList.remove("hidden");
+});
+
+confirmYesBtn.addEventListener("click", async () => {
+  confirmYesBtn.disabled = true;
+  confirmYesBtn.textContent = "Removing...";
   try {
     const result = await browser.runtime.sendMessage({ type: "delete_seed" });
+    confirmDelete.classList.add("hidden");
+    deleteBtn.classList.remove("hidden");
     if (result.success) {
       setStatus("Seed removed", "info");
       configuredView.classList.add("hidden");
       setupView.classList.remove("hidden");
-      deleteBtn.disabled = false;
     } else {
       setStatus("Error: " + (result.message || "Unknown"), "error");
-      deleteBtn.disabled = false;
     }
   } catch (e) {
+    confirmDelete.classList.add("hidden");
+    deleteBtn.classList.remove("hidden");
     setStatus("Error: " + e.message, "error");
-    deleteBtn.disabled = false;
   }
+  confirmYesBtn.disabled = false;
+  confirmYesBtn.textContent = "Yes, Remove";
 });
 
 init();
