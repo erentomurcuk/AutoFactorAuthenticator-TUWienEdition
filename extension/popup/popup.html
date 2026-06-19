@@ -11,7 +11,7 @@
     .ok { background: #1b4332; border: 1px solid #2d6a4f; color: #95d5b2; }
     .error { background: #3d1f1f; border: 1px solid #6b2a2a; color: #e5989b; }
     .info { background: #1e2a4a; border: 1px solid #3a4f8a; color: #a8c0ff; }
-    textarea { width: 100%; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 13px; padding: 10px; border: 1px solid #333; border-radius: 8px; background: #16213e; color: #e0e0e0; resize: vertical; min-height: 60px; outline: none; }
+    textarea { width: 100%; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 13px; padding: 10px; border: 1px solid #333; border-radius: 8px; background: #16213e; color: #e0e0e0; resize: none; min-height: 60px; outline: none; }
     textarea:focus { border-color: #4a6cf7; }
     label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; color: #a0a0c0; }
     button { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px; }
@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h1>TUWien Auto 2FA</h1>
+    <h1>TU Wien Auto 2FA</h1>
   <div id="status" class="status info">Checking...</div>
 
   <div id="configuredView" class="hidden">
@@ -45,6 +45,25 @@
     <textarea id="seedInput" placeholder="e.g. JBSWY3DPEHPK3PXP"></textarea>
     <div class="hint">Your secret key stays in your <span id="keychainName">keychain</span>. Never leaves your device.</div>
     <button id="saveBtn" class="btn-primary" disabled>Save to Keychain</button>
+  </div>
+
+  <button id="howToBtn" style="background:none;border:none;color:#4a6cf7;font-size:12px;cursor:pointer;padding:8px 0 0 0;margin-top:4px;text-align:left;">How to get my key?</button>
+
+  <div id="howToGuide" class="hidden" style="font-size:12px;color:#a0a0c0;line-height:1.5;margin-top:8px;padding:10px;background:#16213e;border-radius:8px;border:1px solid #333;">
+    <p style="font-weight:600;color:#e0e0e0;margin-bottom:6px;">Apps you can export from:</p>
+    <p>• <strong>Google Authenticator</strong>: Settings → Transfer accounts → Export → Show QR</p>
+    <p>• <strong>Authy</strong>: Desktop app → Settings → Export → Enter backup password → Show QR</p>
+    <p>• <strong>Bitwarden</strong>: Vault → View item → copy TOTP seed</p>
+    <p>• <strong>1Password</strong>: Vault → View item → copy TOTP seed</p>
+    <p>• <strong>KeePassXC</strong>: Entry → TOTP → Show QR / copy seed</p>
+    <p>• <strong>Raivo OTP</strong>: Settings → Export → Select accounts → Show QR</p>
+    <p>• <strong>2FAS</strong>: Settings → Export → Encrypted backup → QR</p>
+    <p>• <strong>Aegis</strong>: Settings → Export → Unencrypted JSON → find seed</p>
+    <p style="font-weight:600;color:#e5989b;margin:8px 0 6px;">Apps that DON'T allow seed export:</p>
+    <p>• Duo Mobile</p>
+    <p>• Microsoft Authenticator</p>
+    <p>• Cisco Duo</p>
+    <p style="margin-top:8px;">Tip: When setting up 2FA, always save the setup key or QR code shown by the website!</p>
   </div>
 
   <script src="popup.js"></script>

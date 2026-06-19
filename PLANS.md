@@ -6,7 +6,7 @@
 - [x] Rust native host (native-host/) — builds, installed, macOS universal binary
 - [x] pnpm + web-ext@10.4.0 (0 vulnerabilities)
 - [x] Git repo initialized
-- [x] Renamed TUWEL → TUWien throughout
+- [x] Renamed TUWEL → TU Wien throughout
 - [x] Native host installed in ~/Library/Application Support/Mozilla/NativeMessagingHosts/
 
 ## Architecture

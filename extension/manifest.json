@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "TUWien Auto 2FA",
+  "name": "TU Wien Auto 2FA",
   "version": "1.0.0",
-  "description": "Automatically fills the Multi-Factor Authentication code for TUWien login",
+  "description": "Automatically fills the Multi-Factor Authentication code for TU Wien login",
   "browser_specific_settings": {
     "gecko": {
       "id": "tuwien-auto-2fa@tuwien.ac.at",
@@ -28,7 +28,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "TUWien Auto 2FA",
+    "default_title": "TU Wien Auto 2FA",
     "default_icon": "icons/icon.svg"
   },
   "icons": {

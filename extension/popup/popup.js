@@ -7,6 +7,8 @@ const deleteBtn = document.getElementById("deleteBtn");
 const confirmDelete = document.getElementById("confirmDelete");
 const confirmYesBtn = document.getElementById("confirmYesBtn");
 const confirmNoBtn = document.getElementById("confirmNoBtn");
+const howToBtn = document.getElementById("howToBtn");
+const howToGuide = document.getElementById("howToGuide");
 let currentOS = null;
 
 function setStatus(text, type) {
@@ -92,6 +94,11 @@ deleteBtn.addEventListener("click", () => {
 confirmNoBtn.addEventListener("click", () => {
   confirmDelete.classList.add("hidden");
   deleteBtn.classList.remove("hidden");
+});
+
+howToBtn.addEventListener("click", () => {
+  howToGuide.classList.toggle("hidden");
+  howToBtn.textContent = howToGuide.classList.contains("hidden") ? "How to get my key?" : "Hide guide";
 });
 
 confirmYesBtn.addEventListener("click", async () => {

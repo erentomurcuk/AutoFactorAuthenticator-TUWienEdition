@@ -2,7 +2,7 @@ use std::io::{self, Read, Write};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 
-const SERVICE: &str = "TUWien Auto 2FA";
+const SERVICE: &str = "TU Wien Auto 2FA";
 const SEED_KEY: &str = "totp_seed";
 const MAX_MESSAGE_SIZE: usize = 4_194_304;
 const MAX_SEED_SIZE: usize = 256;

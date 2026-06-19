@@ -57,7 +57,7 @@ install_manifest() {
   cat > "$manifest_dir/$HOST_NAME.json" << EOF
 {
   "name": "$HOST_NAME",
-  "description": "Native host for TUWien Auto 2FA - stores TOTP seed in OS keychain",
+  "description": "Native host for TU Wien Auto 2FA - stores TOTP seed in OS keychain",
   "path": "$binary_path",
   "type": "stdio",
   "allowed_extensions": ["$EXTENSION_ID"]
@@ -67,7 +67,7 @@ EOF
 }
 
 main() {
-  echo "=== TUWien Auto 2FA - Native Host Installer ==="
+  echo "=== TU Wien Auto 2FA - Native Host Installer ==="
   local os
   os=$(detect_os)
   echo "Detected OS: $os"
