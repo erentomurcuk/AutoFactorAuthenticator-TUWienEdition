@@ -4,6 +4,7 @@ const setupView = document.getElementById("setupView");
 const seedInput = document.getElementById("seedInput");
 const saveBtn = document.getElementById("saveBtn");
 const deleteBtn = document.getElementById("deleteBtn");
+let currentOS = null;
 
 function setStatus(text, type) {
   statusEl.textContent = text;
@@ -12,11 +13,15 @@ function setStatus(text, type) {
 
 function getKeychainName(os) {
   switch (os) {
-    case "mac":  return "Apple Keychain";
-    case "win":  return "Windows Credential Manager";
-    case "linux": return "GNOME Keyring / KDE Wallet";
-    default:     return "OS keychain";
+    case "mac":   return "Apple Keychain";
+    case "win":   return "Windows Credential Manager";
+    case "linux": return "keyring";
+    default:      return "OS keychain";
   }
+}
+
+function linuxKeyringHint() {
+  return "Install gnome-keyring, kwallet, or enable KeePassXC Secret Service plugin, then restart Firefox.";
 }
 
 function isValidBase32(str) {
@@ -28,9 +33,9 @@ seedInput.addEventListener("input", () => {
 });
 
 async function init() {
-  browser.runtime.getPlatformInfo().then((info) => {
-    document.getElementById("keychainName").textContent = getKeychainName(info.os);
-  });
+  const info = await browser.runtime.getPlatformInfo();
+  currentOS = info.os;
+  document.getElementById("keychainName").textContent = getKeychainName(info.os);
   try {
     const result = await browser.runtime.sendMessage({ type: "check_configured" });
     if (result.configured) {
@@ -43,7 +48,8 @@ async function init() {
       setupView.classList.remove("hidden");
     }
   } catch (e) {
-    setStatus("Native host not found. Run install.sh first.", "error");
+    const msg = currentOS === "linux" ? linuxKeyringHint() : "Native host not found. Run install.sh first.";
+    setStatus(msg, "error");
   }
 }
 
@@ -62,12 +68,14 @@ saveBtn.addEventListener("click", async () => {
       configuredView.classList.remove("hidden");
       setupView.classList.add("hidden");
     } else {
-      setStatus("Error: " + (result.message || "Unknown"), "error");
+      const msg = currentOS === "linux" ? linuxKeyringHint() : "Error: " + (result.message || "Unknown");
+      setStatus(msg, "error");
       saveBtn.disabled = false;
       saveBtn.textContent = "Save to Keychain";
     }
   } catch (e) {
-    setStatus("Error: " + e.message, "error");
+    const msg = currentOS === "linux" ? linuxKeyringHint() : "Error: " + e.message;
+    setStatus(msg, "error");
     saveBtn.disabled = false;
     saveBtn.textContent = "Save to Keychain";
   }
