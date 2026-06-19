@@ -1,3 +1,0 @@
-allowBuilds:
-  dtrace-provider: false
-  spawn-sync: false
