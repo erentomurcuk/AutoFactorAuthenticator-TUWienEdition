@@ -1,0 +1,76 @@
+#!/bin/bash
+# AppImage entry point. Shows a GUI consent dialog on first run and writes the
+# Firefox native messaging manifest.
+
+set -euo pipefail
+
+HERE="$(dirname "$(readlink -f "$0")")"
+BINARY="$HERE/usr/bin/tuwien-2fa-native"
+MANIFEST_DIR="$HOME/.mozilla/native-messaging-hosts"
+MANIFEST_FILE="$MANIFEST_DIR/com.tuwien.2fa.json"
+
+show_dialog() {
+  local title="$1"
+  local text="$2"
+  local type="${3:-info}"
+
+  if command -v zenity >/dev/null 2>&1; then
+    case "$type" in
+      question) zenity --question --title="$title" --text="$text" --width=400 ;;
+      *) zenity --"$type" --title="$title" --text="$text" --width=400 ;;
+    esac
+  elif command -v kdialog >/dev/null 2>&1; then
+    case "$type" in
+      question) kdialog --title="$title" --yesno "$text" ;;
+      *) kdialog --title="$title" --msgbox "$text" ;;
+    esac
+  else
+    echo "$title: $text"
+  fi
+}
+
+install_manifest() {
+  mkdir -p "$MANIFEST_DIR"
+  cat > "$MANIFEST_FILE" << EOF
+{
+  "name": "com.tuwien.2fa",
+  "description": "Native host for TU Wien Auto 2FA",
+  "path": "$BINARY",
+  "type": "stdio",
+  "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]
+}
+EOF
+}
+
+uninstall() {
+  rm -f "$MANIFEST_FILE"
+  "$BINARY" --delete-credential 2>/dev/null || true
+  show_dialog "TU Wien Auto 2FA" "Uninstall complete." info
+}
+
+case "${1:-}" in
+  --uninstall)
+    uninstall
+    exit 0
+    ;;
+  --install)
+    # force install without dialog
+    install_manifest
+    show_dialog "TU Wien Auto 2FA" "Native host registered with Firefox." info
+    exit 0
+    ;;
+esac
+
+if [ ! -f "$MANIFEST_FILE" ]; then
+  show_dialog "TU Wien Auto 2FA" \
+    "TU Wien 2FA needs to register with Firefox.\n\nThis will create a configuration file that allows the Firefox extension to communicate with the native host.\n\nNo personal data is stored. Your TOTP seed will be saved securely in your system keyring.\n\nDo you want to proceed?" \
+    question
+
+  if [ $? -eq 0 ]; then
+    install_manifest
+    show_dialog "TU Wien Auto 2FA" "Installation complete!\n\nTU Wien 2FA is now ready to use with Firefox.\n\nTo uninstall later, open this app again." info
+  fi
+fi
+
+# By default, launch the native host (for Firefox to communicate with)
+exec "$BINARY"

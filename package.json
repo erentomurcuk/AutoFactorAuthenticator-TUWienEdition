@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "web-ext run --source-dir extension",
-    "build": "web-ext build --source-dir extension",
+    "build": "web-ext build --source-dir extension --overwrite-dest",
     "lint": "web-ext lint --source-dir extension",
     "install-host": "cd native-host && bash install.sh"
   },
   "devDependencies": {
-    "web-ext": "^10.4.0"
+    "web-ext": "10.4.0"
   }
 }

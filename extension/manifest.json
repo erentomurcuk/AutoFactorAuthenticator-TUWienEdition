@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "TU Wien Auto 2FA",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Automatically fills the Multi-Factor Authentication code for TU Wien login",
   "browser_specific_settings": {
     "gecko": {
-      "id": "tuwien-auto-2fa@tuwien.ac.at",
+      "id": "tuwien-auto-2fa@aGreatTUWienStudent",
       "strict_min_version": "128.0"
     }
   },
@@ -32,5 +32,8 @@
   },
   "icons": {
     "48": "icons/icon.svg"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'"
   }
 }

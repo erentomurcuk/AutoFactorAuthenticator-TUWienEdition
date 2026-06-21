@@ -1,0 +1,160 @@
+# Installed Dependencies
+
+This file records software, tools, and dependencies that were installed or added
+by the OpenCode agent while working on the TU Wien Auto 2FA project.
+
+## Legend
+
+- **Installed by agent** — added by me during this session.
+- **Already present** — existed on the system before my work; listed here for
+  context because the project depends on them.
+
+---
+
+## Primary tools (already present)
+
+| Tool | Version | Location | Installed by agent? |
+|------|---------|----------|---------------------|
+| pnpm | 11.8.0 | /opt/homebrew/bin/pnpm | No |
+| Node.js | v26.3.0 | /opt/homebrew/bin/node | No |
+| npm | 11.16.0 (global) | /opt/homebrew/lib | No |
+| rustc | 1.96.0 | ~/.cargo/bin/rustc (rustup proxy) | No |
+| cargo | 1.96.0 | ~/.cargo/bin/cargo (rustup proxy) | No |
+| rustup | 1.29.0 | ~/.cargo/bin/rustup | No |
+
+## Primary tools installed by the agent
+
+| Tool | Version | Location | Purpose |
+|------|---------|----------|---------|
+| cargo-xwin | 0.23.0 | ~/.cargo/bin/cargo-xwin | Cross-compile Rust to Windows MSVC target |
+| cargo-wix | 0.3.9 | ~/.cargo/bin/cargo-wix | Build Windows MSI installers |
+
+## Rust targets installed/added by the agent
+
+| Target | Status | Notes |
+|--------|--------|-------|
+| aarch64-apple-darwin | Already present | Native Apple Silicon macOS target |
+| x86_64-apple-darwin | Already present | Native Intel macOS target |
+| x86_64-pc-windows-msvc | **Added** | Used to cross-compile the native host for Windows |
+
+## Project-local pnpm (Node.js) dependencies
+
+Installed into `node_modules/` by running `pnpm install`.
+
+### Direct dev dependency
+
+| Package | Version |
+|---------|---------|
+| web-ext | 10.4.0 |
+
+### Top-level transitive dependencies of web-ext
+
+| Package | Version |
+|---------|---------|
+| @babel/runtime | 7.29.7 |
+| @devicefarmer/adbkit | 3.3.8 |
+| addons-linter | 10.7.0 |
+| camelcase | 8.0.0 |
+| chrome-launcher | 1.2.0 |
+| debounce | 1.2.1 |
+| decamelize | 6.0.0 |
+| es6-error | 4.1.1 |
+| firefox-profile | 4.7.0 |
+| fx-runner | 1.5.0 |
+| https-proxy-agent | 7.0.6 |
+| jose | 5.9.6 |
+| jszip | 3.10.1 |
+| multimatch | 6.0.0 |
+| open | 11.0.0 |
+| parse-json | 8.3.0 |
+| pino | 10.3.1 |
+| promise-toolbox | 0.21.0 |
+| source-map-support | 0.5.21 |
+| strip-bom | 5.0.0 |
+| strip-json-comments | 5.0.3 |
+| tmp | 0.2.7 |
+| update-notifier | 7.3.1 |
+| watchpack | 2.5.1 |
+| yargs | 17.7.2 |
+| zip-dir | 2.0.0 |
+
+> The complete resolved tree is locked in `pnpm-lock.yaml`.
+
+## Project-local Rust/Cargo dependencies
+
+Resolved in `native-host/Cargo.lock` and declared in `native-host/Cargo.toml`.
+
+### Direct dependencies (pinned)
+
+| Crate | Version |
+|-------|---------|
+| serde | 1.0.228 |
+| serde_json | 1.0.150 |
+| byteorder | 1.5.0 |
+| keyring | 3.6.3 |
+
+### Selected transitive dependencies
+
+| Crate | Version |
+|-------|---------|
+| bitflags | 2.13.0 |
+| core-foundation | 0.9.4 / 0.10.1 |
+| core-foundation-sys | 0.8.7 |
+| dbus | 0.9.11 |
+| dbus-secret-service | 4.1.0 |
+| itoa | 1.0.18 |
+| libc | 0.2.186 |
+| libdbus-sys | 0.2.7 |
+| log | 0.4.32 |
+| memchr | 2.8.2 |
+| pkg-config | 0.3.33 |
+| proc-macro2 | 1.0.106 |
+| quote | 1.0.45 |
+| security-framework | 2.11.1 / 3.7.0 |
+| security-framework-sys | 2.17.0 |
+| syn | 2.0.118 |
+| windows-sys | 0.60.2 |
+| windows-targets | 0.53.5 |
+| windows_x86_64_msvc | 0.53.1 |
+| zeroize | 1.9.0 |
+| zeroize_derive | 1.5.0 |
+
+## System tools used but not installed
+
+The following native macOS utilities were used; they were already part of the
+operating system:
+
+- `hdiutil` — DMG creation
+- `iconutil` — ICNS icon creation
+- `sips` — image conversion
+- `qlmanage` — SVG preview rendering
+- `codesign` — ad-hoc code signing
+- `uuidgen` — GUID generation
+
+## What was NOT installed
+
+- No Homebrew packages were installed.
+- No system-wide Python packages were installed.
+- No global npm/pnpm packages were installed.
+- No Apple Developer certificates or notarization credentials were used.
+- No additional Rust toolchains were installed; only the `x86_64-pc-windows-msvc`
+  target was added to the existing toolchain.
+
+## How to remove what the agent installed
+
+```bash
+# Remove cargo-installed binaries
+cargo uninstall cargo-xwin
+cargo uninstall cargo-wix
+
+# Remove the Windows cross-compile target
+rustup target remove x86_64-pc-windows-msvc
+
+# Remove project-local Node dependencies
+cd /Users/eren/Projects/TUWEL-Auto-2FA
+rm -rf node_modules pnpm-lock.yaml
+
+# Remove Rust build artifacts
+cd native-host
+rm -rf target
+```

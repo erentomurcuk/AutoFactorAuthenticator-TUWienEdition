@@ -1,6 +1,25 @@
 node_modules/
 web-ext-artifacts/
 native-host/target/
+
+# Installer build outputs
+*.dmg
+*.msi
+*.exe
+*.deb
+*.rpm
+*.AppImage
+native-host/build/*/AppDir/
+native-host/build/*/*.icns
+native-host/build/*/*.ico
+native-host/build/*/*.png
+native-host/build/*/tuwien-2fa-native*
+native-host/build/*/*.xpi
+native-host/build/*/*.txt
+native-host/build/macos/TU Wien 2FA.app/
+native-host/build/linux/rpmbuild/
+native-host/build/linux/linuxdeploy*.AppImage
+
 *.swp
 *.swo
 .DS_Store

@@ -7,7 +7,9 @@ function base32Decode(str) {
   let buffer = 0, bitsLeft = 0;
   for (const char of str) {
     const val = ALPHABET.indexOf(char);
-    if (val === -1) continue;
+    if (val === -1) {
+      throw new Error("Invalid base32 character: " + char);
+    }
     buffer = (buffer << 5) | val;
     bitsLeft += 5;
     if (bitsLeft >= 8) {
@@ -27,9 +29,12 @@ function intTo8Bytes(num) {
   return bytes;
 }
 
-async function generateTOTP(seed) {
+const TOTP_WINDOW_SECONDS = 30;
+const WINDOW_LEEWAY_SECONDS = 5;
+
+async function generateTOTP(seed, windowOffset = 0) {
   const decodedSeed = base32Decode(seed);
-  const counter = Math.floor(Date.now() / 1000 / 30);
+  const counter = Math.floor(Date.now() / 1000 / TOTP_WINDOW_SECONDS) + windowOffset;
   const counterBytes = intTo8Bytes(counter);
   const key = await crypto.subtle.importKey("raw", decodedSeed, { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", key, counterBytes);
@@ -50,19 +55,25 @@ function cacheTOTP(code, counter) {
   clearTimer = setTimeout(() => {
     lastTOTP = null;
     lastCounter = -1;
-  }, 31000);
+  }, (TOTP_WINDOW_SECONDS + 1) * 1000);
 }
 
 browser.runtime.onMessage.addListener((msg, sender) => {
   if (sender.id !== browser.runtime.id) return;
   if (msg.type === "request_totp") {
-    const counter = Math.floor(Date.now() / 1000 / 30);
+    const now = Date.now() / 1000;
+    const currentCounter = Math.floor(now / TOTP_WINDOW_SECONDS);
+    const remaining = TOTP_WINDOW_SECONDS - (now % TOTP_WINDOW_SECONDS);
+    // If we're within the last few seconds of a window, generate the next
+    // window's code so it doesn't expire before the user can submit it.
+    const windowOffset = remaining <= WINDOW_LEEWAY_SECONDS ? 1 : 0;
+    const counter = currentCounter + windowOffset;
     if (lastTOTP && lastCounter === counter) {
       return Promise.resolve(lastTOTP);
     }
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "get_seed" }).then(async (response) => {
       if (response.status === "ok" && response.data) {
-        const code = await generateTOTP(response.data);
+        const code = await generateTOTP(response.data, windowOffset);
         cacheTOTP(code, counter);
         return code;
       }
@@ -71,8 +82,20 @@ browser.runtime.onMessage.addListener((msg, sender) => {
   }
 });
 
+const POPUP_URL = browser.runtime.getURL("popup/popup.html");
+
+function isPopup(sender) {
+  return sender.id === browser.runtime.id && !!sender.url && sender.url.startsWith(POPUP_URL);
+}
+
 browser.runtime.onMessage.addListener((msg, sender) => {
   if (sender.id !== browser.runtime.id) return;
+  if (msg.type === "ping") {
+    return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "ping" }).then((r) => ({
+      success: r.status === "ok",
+      message: r.message,
+    }));
+  }
   if (msg.type === "check_configured") {
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "check" }).then((r) => ({
       configured: r.status === "ok" && !!r.data,
@@ -80,12 +103,18 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     })).catch((e) => ({ configured: false, message: e.message }));
   }
   if (msg.type === "store_seed") {
+    if (!isPopup(sender)) {
+      return Promise.resolve({ success: false, message: "Not allowed" });
+    }
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "store_seed", seed: msg.seed }).then((r) => ({
       success: r.status === "ok",
       message: r.message,
     }));
   }
   if (msg.type === "delete_seed") {
+    if (!isPopup(sender)) {
+      return Promise.resolve({ success: false, message: "Not allowed" });
+    }
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "delete_seed" }).then((r) => ({
       success: r.status === "ok",
       message: r.message,

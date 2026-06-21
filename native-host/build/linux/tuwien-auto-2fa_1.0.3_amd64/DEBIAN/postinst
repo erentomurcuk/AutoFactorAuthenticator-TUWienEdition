@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+BINARY_PATH="/opt/tuwien-2fa/tuwien-2fa-native"
+MANIFEST_DIR="$HOME/.mozilla/native-messaging-hosts"
+
+mkdir -p "$MANIFEST_DIR"
+cat > "$MANIFEST_DIR/com.tuwien.2fa.json" << EOF
+{
+  "name": "com.tuwien.2fa",
+  "description": "Native host for TU Wien Auto 2FA",
+  "path": "$BINARY_PATH",
+  "type": "stdio",
+  "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]
+}
+EOF

@@ -7,8 +7,6 @@ const deleteBtn = document.getElementById("deleteBtn");
 const confirmDelete = document.getElementById("confirmDelete");
 const confirmYesBtn = document.getElementById("confirmYesBtn");
 const confirmNoBtn = document.getElementById("confirmNoBtn");
-const howToBtn = document.getElementById("howToBtn");
-const howToGuide = document.getElementById("howToGuide");
 let currentOS = null;
 
 function setStatus(text, type) {
@@ -29,12 +27,26 @@ function linuxKeyringHint() {
   return "Install gnome-keyring, kwallet, or enable KeePassXC Secret Service plugin, then restart Firefox.";
 }
 
-function isValidBase32(str) {
-  return /^[A-Z2-7]+=*$/i.test(str.replace(/[\s-]/g, ""));
+function validateBase32(str) {
+  const cleaned = str.replace(/[\s-]/g, "");
+  if (cleaned.length === 0) return { valid: false, reason: "empty" };
+  const validChars = /^[A-Z2-7]+=*$/i;
+  if (!validChars.test(cleaned)) {
+    for (let i = 0; i < cleaned.length; i++) {
+      const c = cleaned[i];
+      if (!/^[A-Z2-7=]$/i.test(c)) {
+        return { valid: false, reason: `invalid character at position ${i + 1}: '${c}' (code: ${c.charCodeAt(0)})` };
+      }
+      if (c === '=' && i < cleaned.length - 6) {
+        return { valid: false, reason: `padding '=' at position ${i + 1} before end` };
+      }
+    }
+  }
+  return { valid: true };
 }
 
 seedInput.addEventListener("input", () => {
-  saveBtn.disabled = !isValidBase32(seedInput.value.trim());
+  saveBtn.disabled = !validateBase32(seedInput.value.trim()).valid;
 });
 
 async function init() {
@@ -42,6 +54,8 @@ async function init() {
   currentOS = info.os;
   document.getElementById("keychainName").textContent = getKeychainName(info.os);
   try {
+    const ping = await browser.runtime.sendMessage({ type: "ping" });
+    console.log("Native host ping:", ping);
     const result = await browser.runtime.sendMessage({ type: "check_configured" });
     if (result.configured) {
       setStatus("Keychain: configured", "ok");
@@ -53,15 +67,17 @@ async function init() {
       setupView.classList.remove("hidden");
     }
   } catch (e) {
-    const msg = currentOS === "linux" ? linuxKeyringHint() : "Native host not found. Run install.sh first.";
+    console.error("Native host error:", e);
+    const msg = currentOS === "linux" ? linuxKeyringHint() : "Native host not responding: " + e.message;
     setStatus(msg, "error");
   }
 }
 
 saveBtn.addEventListener("click", async () => {
   const seed = seedInput.value.trim();
-  if (!isValidBase32(seed)) {
-    setStatus("Invalid base32 key", "error");
+  const check = validateBase32(seed);
+  if (!check.valid) {
+    setStatus("Invalid base32 key: " + check.reason, "error");
     return;
   }
   saveBtn.disabled = true;
@@ -73,7 +89,7 @@ saveBtn.addEventListener("click", async () => {
       configuredView.classList.remove("hidden");
       setupView.classList.add("hidden");
     } else {
-      const msg = currentOS === "linux" ? linuxKeyringHint() : "Error: " + (result.message || "Unknown");
+      const msg = currentOS === "linux" ? linuxKeyringHint() : result.message || "Unknown";
       setStatus(msg, "error");
       saveBtn.disabled = false;
       saveBtn.textContent = "Save to Keychain";
@@ -94,11 +110,6 @@ deleteBtn.addEventListener("click", () => {
 confirmNoBtn.addEventListener("click", () => {
   confirmDelete.classList.add("hidden");
   deleteBtn.classList.remove("hidden");
-});
-
-howToBtn.addEventListener("click", () => {
-  howToGuide.classList.toggle("hidden");
-  howToBtn.textContent = howToGuide.classList.contains("hidden") ? "How to get my key?" : "Hide guide";
 });
 
 confirmYesBtn.addEventListener("click", async () => {
