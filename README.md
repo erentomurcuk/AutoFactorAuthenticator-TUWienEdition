@@ -41,7 +41,7 @@ Each installer includes the native host. You still need to install the `.xpi` in
 2. Open it and drag **TU Wien 2FA.app** into **Applications**.
 3. Launch the app, click **Install**.
 4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...**.
-5. Pick the signed `tu_wien_auto_2fa-1.0.3.xpi`.
+5. Pick the signed `.xpi`.
 6. Click the extension icon and paste your TOTP secret.
 
 ### Windows
