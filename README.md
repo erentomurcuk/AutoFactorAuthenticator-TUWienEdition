@@ -181,7 +181,9 @@ bash create-dmg.sh
 
 The DMG lands in `native-host/build/macos/TUWien-Auto-2FA.dmg`.
 
-### Windows — EXE installer
+### Windows — EXE installer (x64 + ARM64)
+
+The installer supports **both x64 and ARM64** in a single package. If an ARM64 binary isn't found, it falls back to x64-only.
 
 ```powershell
 cd native-host\build\windows
@@ -189,14 +191,16 @@ powershell -ExecutionPolicy Bypass -File build-exe.ps1
 ```
 
 Under the hood this:
-1. Looks for the Rust cross-compiled binary at `target/x86_64-pc-windows-msvc/release/tuwien-2fa-native.exe`
-2. Bundles it with `inno-setup.iss` into an installer
-3. Outputs `TUWien-Auto-2FA-Setup.exe` in the same directory
+1. Looks for `tuwien-2fa-native.exe` (x64) and optionally the ARM64 binary
+2. Copies each with an arch-specific name (`tuwien-2fa-native-x64.exe`, `tuwien-2fa-native-arm64.exe`)
+3. Inno Setup's `IsARM64` check installs the right one at runtime
+4. Outputs `TUWien-Auto-2FA-Setup.exe` in the same directory
 
-Cross-compile from Linux/macOS:
+Cross-compile both from macOS/Linux:
 
 ```bash
 cargo xwin build --release --target x86_64-pc-windows-msvc
+cargo xwin build --release --target aarch64-pc-windows-msvc
 ```
 
 Or build natively on Windows with the MSVC toolchain:

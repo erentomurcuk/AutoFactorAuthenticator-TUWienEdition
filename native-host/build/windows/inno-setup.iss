@@ -9,12 +9,15 @@ UninstallDisplayIcon={app}\tuwien-2fa-native.exe
 OutputBaseFilename=TUWien-Auto-2FA-Setup
 Compression=lzma2
 SolidCompression=yes
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64 arm64
+ArchitecturesInstallIn64BitMode=x64 arm64
 WizardStyle=modern
 
 [Files]
-Source: "tuwien-2fa-native.exe"; DestDir: "{app}"; Flags: ignoreversion
+; x64 binary (default)
+Source: "tuwien-2fa-native-x64.exe"; DestDir: "{app}"; DestName: "tuwien-2fa-native.exe"; Check: not IsARM64; Flags: ignoreversion
+; ARM64 binary
+Source: "tuwien-2fa-native-arm64.exe"; DestDir: "{app}"; DestName: "tuwien-2fa-native.exe"; Check: IsARM64; Flags: ignoreversion
 Source: "launcher.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.txt"; DestDir: "{app}"; Flags: ignoreversion
 

@@ -1,5 +1,6 @@
 #!/bin/bash
 # Build the Windows EXE installer using Inno Setup.
+# Builds a single installer for x64 and ARM64.
 # This script is intended to run on Windows with Inno Setup installed.
 
 set -euo pipefail
@@ -8,28 +9,41 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_ROOT="$(cd "$NATIVE_HOST_DIR/.." && pwd)"
 
-# Find a Windows binary (cross-compiled or native)
-BINARY=""
+# Find x64 binary
+X64_BINARY=""
 for path in \
   "$NATIVE_HOST_DIR/target/x86_64-pc-windows-msvc/release/tuwien-2fa-native.exe" \
   "$NATIVE_HOST_DIR/target/x86_64-pc-windows-gnu/release/tuwien-2fa-native.exe" \
   "$NATIVE_HOST_DIR/target/release/tuwien-2fa-native.exe"; do
   if [ -f "$path" ]; then
-    BINARY="$path"
+    X64_BINARY="$path"
     break
   fi
 done
 
-if [ -z "$BINARY" ]; then
-  echo "Error: Windows binary not found. Build with one of:" >&2
+if [ -z "$X64_BINARY" ]; then
+  echo "Error: x64 binary not found. Build with one of:" >&2
   echo "  cargo xwin build --release --target x86_64-pc-windows-msvc" >&2
   echo "  cargo build --release --target x86_64-pc-windows-gnu" >&2
+  echo "  cargo build --release (native x64 Windows only)" >&2
   exit 1
 fi
 
+# Find ARM64 binary (optional)
+ARM64_BINARY=""
+ARM64_PATH="$NATIVE_HOST_DIR/target/aarch64-pc-windows-msvc/release/tuwien-2fa-native.exe"
+if [ -f "$ARM64_PATH" ]; then
+  ARM64_BINARY="$ARM64_PATH"
+fi
+
 # Stage files
-cp "$BINARY" "$SCRIPT_DIR/tuwien-2fa-native.exe"
-cp "$SCRIPT_DIR/launcher.bat" "$SCRIPT_DIR/launcher.bat"
+cp "$X64_BINARY" "$SCRIPT_DIR/tuwien-2fa-native-x64.exe"
+if [ -n "$ARM64_BINARY" ]; then
+  cp "$ARM64_BINARY" "$SCRIPT_DIR/tuwien-2fa-native-arm64.exe"
+  echo "ARM64 binary found -- building dual-architecture installer."
+else
+  echo "ARM64 binary not found -- building x64-only installer."
+fi
 
 cat > "$SCRIPT_DIR/README.txt" <<'EOF'
 TU Wien Auto 2FA
