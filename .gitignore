@@ -3,6 +3,11 @@ web-ext-artifacts/
 native-host/target/
 .opencode/
 .vscode/
+node_modules
+package.json
+package-lock.json
+pnpm-lock.yaml
+bun.lock
 
 # Installer build outputs
 *.dmg

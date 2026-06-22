@@ -7,7 +7,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PROJECT_ROOT="$(cd "$NATIVE_HOST_DIR/.." && pwd)"
 
 # Find x64 binary
 X64_BINARY=""

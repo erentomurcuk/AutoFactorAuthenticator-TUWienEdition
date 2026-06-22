@@ -10,9 +10,9 @@ $ProjectRoot = Split-Path $NativeHostDir -Parent
 
 # Find x64 binary
 $x64Paths = @(
-    "$NativeHostDir\target\x86_64-pc-windows-msvc\release\tuwien-2fa-native.exe",
-    "$NativeHostDir\target\x86_64-pc-windows-gnu\release\tuwien-2fa-native.exe",
-    "$NativeHostDir\target\release\tuwien-2fa-native.exe"
+    "$ProjectRoot\target\x86_64-pc-windows-msvc\release\tuwien-2fa-native.exe",
+    "$ProjectRoot\target\x86_64-pc-windows-gnu\release\tuwien-2fa-native.exe",
+    "$ProjectRoot\target\release\tuwien-2fa-native.exe"
 )
 
 $x64Binary = $null
@@ -33,7 +33,7 @@ if (-not $x64Binary) {
 
 # Find ARM64 binary (optional — installer will still build for x64 only if missing)
 $arm64Paths = @(
-    "$NativeHostDir\target\aarch64-pc-windows-msvc\release\tuwien-2fa-native.exe"
+    "$ProjectRoot\target\aarch64-pc-windows-msvc\release\tuwien-2fa-native.exe"
 )
 
 $arm64Binary = $null
@@ -78,17 +78,17 @@ Set-Content -Path "$ScriptDir\README.txt" -Value $ReadmeContent -Encoding UTF8
 # Find Inno Setup
 $InnoPaths = @(
     "iscc",
+    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
     "C:\Program Files (x86)\Inno Setup 6\iscc.exe",
     "C:\Program Files\Inno Setup 6\iscc.exe"
 )
 
 $Iscc = $null
 foreach ($path in $InnoPaths) {
-    try {
-        & $path --version 2>$null
+    if (Test-Path $path -ErrorAction SilentlyContinue) {
         $Iscc = $path
         break
-    } catch {}
+    }
 }
 
 if (-not $Iscc) {

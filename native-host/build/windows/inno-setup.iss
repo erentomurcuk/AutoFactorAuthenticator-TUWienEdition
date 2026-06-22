@@ -26,7 +26,7 @@ Name: "{group}\TU Wien Auto 2FA"; Filename: "{app}\launcher.bat"
 Name: "{group}\Uninstall TU Wien Auto 2FA"; Filename: "{uninstallexe}"
 
 [Registry]
-Root: HKCU; Subkey: "Software\Mozilla\NativeMessagingHosts\com.tuwien.2fa"; ValueType: string; Value: "{app}\tuwien-2fa-native.exe"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Mozilla\NativeMessagingHosts\com.tuwien.2fa"; ValueType: string; ValueData: "{app}\tuwien-2fa-native.exe"; Flags: uninsdeletekey
 
 [Run]
 Filename: "{app}\launcher.bat"; Description: "Configure TU Wien 2FA"; Flags: postinstall nowait skipifsilent
