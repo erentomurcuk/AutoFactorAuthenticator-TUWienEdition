@@ -13,7 +13,8 @@ function fillTOTP() {
   if (!isVisibleTextInput(field)) return;
 
   field.dataset.tuwienAutofilled = "true";
-  browser.runtime.sendMessage({ type: "request_totp" }).then((code) => {
+  browser.runtime.sendMessage({ type: "request_totp" }).then((res) => {
+    const code = res.code || res;
     field.value = code;
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new Event("change", { bubbles: true }));

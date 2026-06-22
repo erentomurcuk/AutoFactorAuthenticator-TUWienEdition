@@ -3,43 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=320, initial-scale=1">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; width: 320px; padding: 16px; background: #1a1a2e; color: #e0e0e0; overflow-y: auto; }
-    h1 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #fff; }
-    .status { font-size: 13px; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
-    .ok { background: #1b4332; border: 1px solid #2d6a4f; color: #95d5b2; }
-    .error { background: #3d1f1f; border: 1px solid #6b2a2a; color: #e5989b; }
-    .info { background: #1e2a4a; border: 1px solid #3a4f8a; color: #a8c0ff; }
-    textarea { width: 100%; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 13px; padding: 10px; border: 1px solid #333; border-radius: 8px; background: #16213e; color: #e0e0e0; resize: none; min-height: 60px; outline: none; }
-    textarea:focus { border-color: #4a6cf7; }
-    label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; color: #a0a0c0; }
-    button { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px; }
-    .btn-primary { background: #4a6cf7; color: #fff; }
-    .btn-primary:hover { background: #5b7bf8; }
-    .btn-danger { background: #6b2a2a; color: #e5989b; }
-    .btn-danger:hover { background: #8a3535; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .hint { font-size: 11px; color: #707090; margin-top: 6px; line-height: 1.4; }
-    .hidden { display: none; }
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #4a6cf7; border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <h1>TU Wien Auto 2FA</h1>
+  <h1>TU Wien Auto 2FA</h1>
   <div id="status" class="status info">Checking...</div>
 
-  <div id="configuredView" class="hidden">
-    <p style="font-size:13px;margin-bottom:8px;color:#a0a0c0;">TOTP seed is stored in your system keychain.</p>
-    <div id="confirmDelete" class="hidden" style="background:#3d1f1f;border:1px solid #6b2a2a;border-radius:8px;padding:10px;margin-top:8px;">
-      <p style="font-size:12px;color:#e5989b;margin-bottom:6px;">Remove seed from keychain?</p>
-      <button id="confirmYesBtn" class="btn-danger" style="margin-top:0;">Yes, Remove</button>
-      <button id="confirmNoBtn" style="background:#333;color:#e0e0e0;margin-top:4px;">Cancel</button>
+  <!-- Dashboard (seed configured) -->
+  <div id="dashboardView" class="hidden">
+    <div class="totp-card">
+      <div class="totp-label">Current TOTP</div>
+      <div class="totp-code" id="totpCode">------</div>
+      <div class="totp-actions">
+        <button id="copyBtn" class="btn-icon" title="Copy to clipboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+        <button id="refreshBtn" class="btn-icon" title="New code">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
     </div>
+    <div class="totp-timer">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+    <span class="timer-text" id="timerText"></span>
+
+    <div id="copiedToast" class="copied-toast hidden">Copied to clipboard!</div>
+
+    <div class="divider"></div>
+
     <button id="deleteBtn" class="btn-danger">Remove Seed</button>
+    <div id="confirmDelete" class="hidden confirm-box">
+      <p>Remove seed from keychain?</p>
+      <button id="confirmYesBtn" class="btn-danger">Yes, Remove</button>
+      <button id="confirmNoBtn" class="btn-secondary">Cancel</button>
+    </div>
   </div>
 
+  <!-- Setup (no seed) -->
   <div id="setupView" class="hidden">
     <label for="seedInput">Paste your TOTP secret key (base32)</label>
     <textarea id="seedInput" placeholder="e.g. JBSWY3DPEHPK3PXP"></textarea>
@@ -47,7 +48,7 @@
     <button id="saveBtn" class="btn-primary" disabled>Save to Keychain</button>
   </div>
 
-  <p style="font-size:11px;color:#707090;margin-top:12px;line-height:1.4;border-top:1px solid #333;padding-top:10px;">
+  <p class="footer">
     This is <strong>not</strong> an official tool by TU Wien. It is a self-made project provided <strong>AS IS</strong>. You are responsible for any possible damages or problems.
   </p>
 

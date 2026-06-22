@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TU Wien Auto 2FA",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Automatically fills the Multi-Factor Authentication code for TU Wien login",
   "browser_specific_settings": {
     "gecko": {

@@ -64,18 +64,17 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     const now = Date.now() / 1000;
     const currentCounter = Math.floor(now / TOTP_WINDOW_SECONDS);
     const remaining = TOTP_WINDOW_SECONDS - (now % TOTP_WINDOW_SECONDS);
-    // If we're within the last few seconds of a window, generate the next
-    // window's code so it doesn't expire before the user can submit it.
     const windowOffset = remaining <= WINDOW_LEEWAY_SECONDS ? 1 : 0;
     const counter = currentCounter + windowOffset;
+    const expires_in = Math.round(windowOffset === 0 ? remaining : remaining + TOTP_WINDOW_SECONDS);
     if (lastTOTP && lastCounter === counter) {
-      return Promise.resolve(lastTOTP);
+      return Promise.resolve({ code: lastTOTP, expires_in });
     }
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "get_seed" }).then(async (response) => {
       if (response.status === "ok" && response.data) {
         const code = await generateTOTP(response.data, windowOffset);
         cacheTOTP(code, counter);
-        return code;
+        return { code, expires_in };
       }
       throw new Error(response.message || "Seed not configured");
     });
