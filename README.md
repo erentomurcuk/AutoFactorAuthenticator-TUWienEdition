@@ -1,67 +1,59 @@
 # TU Wien Auto 2FA
 
-Firefox extension that automatically fills the Multi-Factor Authentication code
-for TU Wien login.
+A Firefox extension that auto-fills the 2FA code when you log into TU Wien.
 
-> **Disclaimer:** This is **not** an official tool by TU Wien. It is a
-> self-made project provided **AS IS**. You are responsible for any possible
-> damages or problems arising from its use.
+> **Disclaimer:** This is *not* an official TU Wien tool. It's a side project, provided AS IS. You're responsible for whatever happens when you use it.
 
-The TOTP seed is stored securely in your **OS keychain** (Apple Keychain /
-KDE Wallet / GNOME Keyring / Windows Credential Manager) via a tiny Rust native
-messaging host. It never leaves your device and is never sent to the cloud.
+Your TOTP secret never leaves your machine. It's stored in your OS keychain (Apple Keychain, KDE Wallet, GNOME Keyring, or Windows Credential Manager) via a tiny Rust native messaging host.
 
 ## How it works
 
 ```
 TU Wien login page (idp.zid.tuwien.ac.at)
-       │
-       ▼  detects #totp input field
+        │
+        ▼  spots the #totp field
 Content Script
-       │
-       ▼  requests TOTP code
+        │
+        ▼  asks for a TOTP code
 Background Script
-       │
-       ▼  retrieves seed via Native Messaging
+        │
+        ▼  grabs the seed from the keychain
 Rust Native Host → OS Keychain
-       │
-       ▼  generates TOTP (RFC 6238) via Web Crypto API
+        │
+        ▼  generates TOTP (RFC 6238) with Web Crypto API
 Background Script
-       │
-       ▼  fills the code
-Content Script (user clicks submit manually)
+        │
+        ▼  fills the code in
+Content Script  ←  you still hit submit yourself
 ```
 
-## Prerequisites
+## Requirements
 
-- **Firefox** 128 or later
+- Firefox 128 or newer
 
-## Installation
+## Install (quick way)
 
-### Quick install (recommended)
+Each installer includes the native host. You still need to install the `.xpi` in Firefox separately.
 
-Each installer bundles the native host. The Firefox extension must be installed
-separately from the signed `.xpi` file.
+### macOS
 
-#### macOS
+1. Grab `TUWien-Auto-2FA.dmg`.
+2. Open it and drag **TU Wien 2FA.app** into **Applications**.
+3. Launch the app, click **Install**.
+4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...**.
+5. Pick the signed `tu_wien_auto_2fa-1.0.3.xpi`.
+6. Click the extension icon and paste your TOTP secret.
 
-1. Download `TUWien-Auto-2FA.dmg`.
-2. Open the DMG and drag **TU Wien 2FA.app** to your **Applications** folder.
-3. Launch **TU Wien 2FA.app** and click **Install** in the dialog.
-4. In Firefox, open `about:addons`, click the gear icon, and choose **Install Add-on From File...**.
-5. Select the signed `tu_wien_auto_2fa-1.0.3.xpi` file.
-6. Click the extension icon and paste your TOTP secret key.
+### Windows
 
-#### Windows
+1. Grab `TUWien-Auto-2FA-Setup.exe`.
+2. Run it (admin rights needed).
+3. The launcher pops up — press **Y** to register with Firefox.
+4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...`.
+5. Pick the signed `.xpi`.
+6. Click the extension icon and paste your TOTP secret.
 
-1. Download `TUWien-Auto-2FA-Setup.exe`.
-2. Run the installer (requires administrator rights).
-3. After installation, the launcher opens automatically. Press **Y** to register with Firefox.
-4. In Firefox, open `about:addons`, click the gear icon, and choose **Install Add-on From File...**.
-5. Select the signed `tu_wien_auto_2fa-1.0.3.xpi` file.
-6. Click the extension icon and paste your TOTP secret key.
-
-#### Linux
+### Linux
 
 **Debian / Ubuntu**
 ```bash
@@ -73,63 +65,195 @@ sudo dpkg -i tuwien-auto-2fa_1.0.3_amd64.deb
 sudo rpm -i tuwien-auto-2fa-1.0.3-1.x86_64.rpm
 ```
 
-**AppImage**
+**AppImage** (any distro)
 ```bash
 chmod +x TUWien-Auto-2FA-x86_64.AppImage
 ./TUWien-Auto-2FA-x86_64.AppImage
 ```
 
-After installation, launch **TU Wien 2FA** from your applications menu and click **Install** in the dialog.
+After installing, launch **TU Wien 2FA** from your app menu, click **Install**, then install the `.xpi` in Firefox via `about:addons` → gear → **Install Add-on From File...**.
 
-Then in Firefox, open `about:addons`, click the gear icon, and choose **Install Add-on From File...**.
-Select the signed `tu_wien_auto_2fa-1.0.3.xpi` file.
+## Build from source
 
-### Build & install from source (developers)
+If you'd rather roll your own, or your platform doesn't have a pre-built package:
 
-If you prefer to build everything yourself, or if no pre-built package exists for your system:
+### 1. Native messaging host (Rust)
 
-1. Install the Rust toolchain:
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
-2. On Linux, install `libsecret` development headers:
-   ```bash
-   # Debian/Ubuntu
-   sudo apt install libsecret-1-dev
-   # Fedora
-   sudo dnf install libsecret-devel
-   ```
-3. Build and install the native host:
-   ```bash
-   cd native-host
-   bash install.sh
-   ```
-4. Install the extension temporarily:
-   ```bash
-   cd ..
-   pnpm install
-   pnpm run dev
-   ```
-   Or load `extension/manifest.json` manually at `about:debugging#/runtime/this-firefox`.
+You need the Rust toolchain first:
 
-### Configure your TOTP seed
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
 
-1. Click the extension icon in the toolbar
-2. Paste your TOTP secret key (base32) into the text area
-3. Click **Save to Keychain**
-4. The seed is now stored in your OS keychain
+On Linux you also need `libsecret` development headers:
+
+```bash
+# Debian/Ubuntu
+sudo apt install libsecret-1-dev
+# Fedora
+sudo dnf install libsecret-devel
+# Arch
+sudo pacman -S libsecret
+```
+
+Then build and register the native host:
+
+```bash
+cd native-host
+bash install.sh
+```
+
+This builds the binary, copies the native messaging manifest into the right place so Firefox can find it. Restart Firefox if it was running.
+
+### 2. Firefox extension
+
+```bash
+pnpm install
+pnpm run dev     # runs extension in a temporary Firefox profile
+```
+
+Or load it manually from `about:debugging#/runtime/this-firefox` → pick `extension/manifest.json`.
+
+### 3. Save your TOTP seed
+
+Click the extension icon in the toolbar, paste your base32 TOTP secret, hit **Save to Keychain**. Done.
+
+## Build platform installers
+
+Want to make the DMG / EXE / DEB / RPM / AppImage yourself? Here's how.
+
+### Prerequisites
+
+**All platforms:**
+- Rust toolchain (see above)
+- `pnpm` (for the extension build)
+
+**macOS:**
+- Xcode Command Line Tools: `xcode-select --install`
+
+**Windows:**
+- Visual Studio Build Tools with the C++ workload + Rust Cargo
+- Inno Setup 6 from [jrsoftware.org](https://jrsoftware.org/isdl.php)
+- PowerShell (comes with Windows 10+)
+
+**Linux:**
+- `libsecret` headers (see above)
+- Debian/Ubuntu: `sudo apt install dpkg-dev`
+- Fedora/RHEL: `sudo dnf install rpm-build`
+- AppImage: `wget` (usually pre-installed)
+
+### Extension
+
+```bash
+pnpm install
+pnpm run build
+```
+
+This drops an unsigned `.zip` in `web-ext-artifacts/`. For a signed `.xpi` (permanent install without developer warnings):
+
+```bash
+pnpm exec web-ext sign \
+  --source-dir extension \
+  --channel unlisted \
+  --api-key=YOUR_JWT_ISSUER \
+  --api-secret=YOUR_JWT_SECRET
+```
+
+Get API credentials at [addons.mozilla.org](https://addons.mozilla.org/en-US/developers/addon/api/key/).
+
+### macOS — DMG
+
+```bash
+cd native-host/build
+bash build-packages.sh macos
+```
+
+Or step by step:
+
+```bash
+# 1. Build a universal binary (x86_64 + arm64) and wrap it in a .app
+cd native-host/build/macos
+bash create-app-bundle.sh
+
+# 2. Turn the .app into a DMG
+bash create-dmg.sh
+```
+
+The DMG lands in `native-host/build/macos/TUWien-Auto-2FA.dmg`.
+
+### Windows — EXE installer
+
+```powershell
+cd native-host\build\windows
+powershell -ExecutionPolicy Bypass -File build-exe.ps1
+```
+
+Under the hood this:
+1. Looks for the Rust cross-compiled binary at `target/x86_64-pc-windows-msvc/release/tuwien-2fa-native.exe`
+2. Bundles it with `inno-setup.iss` into an installer
+3. Outputs `TUWien-Auto-2FA-Setup.exe` in the same directory
+
+Cross-compile from Linux/macOS:
+
+```bash
+cargo xwin build --release --target x86_64-pc-windows-msvc
+```
+
+Or build natively on Windows with the MSVC toolchain:
+
+```bash
+cargo build --release
+```
+
+### Linux — DEB, RPM, and AppImage
+
+**All three at once:**
+
+```bash
+cd native-host/build
+bash build-packages.sh linux
+```
+
+**Or one at a time:**
+
+```bash
+# First build the Linux binary
+cd native-host
+cargo build --release
+
+# DEB package
+cd build/linux
+bash build-deb.sh        # needs dpkg-deb
+
+# RPM package
+bash build-rpm.sh        # needs rpmbuild
+
+# AppImage
+bash build-appimage.sh   # downloads linuxdeploy automatically
+```
+
+Artifacts land in `native-host/build/linux/`:
+- `tuwien-auto-2fa_1.0.3_amd64.deb`
+- `tuwien-auto-2fa-1.0.3-1.x86_64.rpm`
+- `TUWien-Auto-2FA-x86_64.AppImage`
+
+**Build everything for all platforms:**
+
+```bash
+cd native-host/build
+bash build-packages.sh all
+```
 
 ## Usage
 
-After configuration, visit `https://idp.zid.tuwien.ac.at/` and log in as usual.
-When the 2FA code input field appears, the extension will automatically fill the TOTP code. You still need to click the login/submit button yourself.
+Once set up, just visit `https://idp.zid.tuwien.ac.at/` and log in. When the 2FA field shows up, the extension fills the code automatically. You still click the submit button yourself.
 
-## Uninstallation
+## Uninstall
 
 - **macOS:** Open **TU Wien 2FA.app** from Applications and click **Uninstall**.
-- **Windows:** Use **Settings > Apps > TU Wien Auto 2FA > Uninstall**. The uninstaller removes the registry key and your stored credential.
+- **Windows:** Go to **Settings > Apps > TU Wien Auto 2FA > Uninstall**.
 - **Linux deb/rpm:** `sudo dpkg -r tuwien-auto-2fa` or `sudo rpm -e tuwien-auto-2fa`.
-- **Linux AppImage:** Run `./TUWien-Auto-2FA-x86_64.AppImage --uninstall`.
+- **Linux AppImage:** `./TUWien-Auto-2FA-x86_64.AppImage --uninstall`.
 - **Source install:** `cd native-host && bash uninstall.sh`.
 
 ## Project structure
@@ -137,123 +261,38 @@ When the 2FA code input field appears, the extension will automatically fill the
 ```
 TUWEL-Auto-2FA/
 ├── extension/              # Firefox extension (plain JS, no bundler)
-│   ├── manifest.json       # MV3 extension manifest
-│   ├── background.js       # TOTP generation, native messaging bridge
-│   ├── content_script.js   # Detects #totp field on TU Wien pages
-│   ├── popup/              # Extension popup UI
+│   ├── manifest.json       # MV3 manifest
+│   ├── background.js       # TOTP generation, talks to native host
+│   ├── content_script.js   # Detects #totp on the login page
+│   ├── popup/              # Popup UI
 │   │   ├── popup.html
 │   │   └── popup.js
-│   └── icons/              # Extension icons
-── native-host/            # Rust native messaging host
-│   ├── src/main.rs         # stdin/stdout JSON protocol + keyring
+│   └── icons/
+├── native-host/            # Rust native messaging host
+│   ├── src/main.rs         # stdin/stdout JSON protocol + keyring access
 │   ├── Cargo.toml
-│   ├── install.sh          # Build + install script
+│   ├── install.sh          # Build + register with Firefox
 │   ├── uninstall.sh
-│   ├── build/              # Platform installer build scripts
+│   ├── build/              # Installer builders per platform
 │   │   ├── macos/
 │   │   ├── windows/
 │   │   └── linux/
-│   └── scripts/            # Shared manifest/cleanup helpers
-└── package.json            # web-ext dev configuration
+│   └── scripts/
+└── package.json            # web-ext config
 ```
 
 ## Security
 
-| Layer | Mechanism |
-|-------|-----------|
-| At rest | TOTP seed stored in OS keychain (Apple Keychain / libsecret / Credential Manager) |
-| In transit | Seed retrieved via Native Messaging (stdin/stdout, only accessible to this extension) |
-| In memory | Seed used only during TOTP generation, not persisted in extension storage |
-| Extension | No data sent over network. No cloud. No telemetry. |
+| Layer | How it works |
+|-------|-------------|
+| At rest | TOTP seed in OS keychain (Apple Keychain / libsecret / Credential Manager) |
+| In transit | Seed fetched via Native Messaging (stdin/stdout, only accessible to this extension) |
+| In memory | Seed used only during TOTP generation, never saved in extension storage |
+| Network | Nothing is sent anywhere. No cloud, no telemetry. |
 
-## Building for distribution
-
-### Extension
-
-You have two options:
-
-**Option A: Use the pre-signed extension**
-
-A signed `.xpi` is provided in `web-ext-artifacts/`. Install it directly in Firefox via `about:addons` → gear icon → "Install Add-on From File...".
-
-**Option B: Build and sign yourself**
-
-1. Build the extension:
-   ```bash
-   pnpm install
-   pnpm run build
-   ```
-   This creates a `.zip` in `web-ext-artifacts/`.
-
-2. Sign it with your Mozilla Add-on Developer credentials:
-   ```bash
-   pnpm exec web-ext sign \
-     --source-dir extension \
-     --channel unlisted \
-     --api-key=YOUR_JWT_ISSUER \
-     --api-secret=YOUR_JWT_SECRET
-   ```
-   Get your API key/secret at `https://addons.mozilla.org/en-US/developers/addon/api/key/`.
-
-   This produces a signed `.xpi` in `web-ext-artifacts/` that you can install permanently.
-
-### Platform installers (native host)
-
-If you want to sign the installers yourself (e.g., notarize the macOS app or code-sign the Windows EXE), you must build them on the respective platform.
-
-#### Prerequisites
-
-**All platforms:**
-- Rust toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-
-**macOS:**
-- Xcode Command Line Tools: `xcode-select --install`
-- No additional dependencies
-
-**Windows:**
-- Visual Studio Build Tools (with C++ workload)
-- Inno Setup 6: https://jrsoftware.org/isdl.php
-- PowerShell (included with Windows 10+)
-
-**Linux:**
-- `libsecret` development headers:
-  ```bash
-  # Debian/Ubuntu
-  sudo apt install libsecret-1-dev
-  # Fedora/RHEL
-  sudo dnf install libsecret-devel
-  # Arch
-  sudo pacman -S libsecret
-  ```
-- `dpkg-deb` (Debian/Ubuntu): `sudo apt install dpkg-dev`
-- `rpmbuild` (Fedora/RHEL): `sudo dnf install rpm-build`
-- `wget` (for AppImage): usually pre-installed
-
-#### Build commands
-
-**macOS**
-
-```bash
-cd native-host/build
-bash build-packages.sh macos
-```
-
-**Windows** (run on Windows with PowerShell)
-
-```powershell
-cd native-host\build\windows
-powershell -ExecutionPolicy Bypass -File build-exe.ps1
-```
-
-**Linux** (run on Linux)
-
-```bash
-cd native-host/build
-bash build-packages.sh linux
-```
-
-Built artifacts are placed in `native-host/build/{macos,windows,linux}/`.
+## Notes
+Support of AI was used on this project.
 
 ## License
 
-Currently UNLICENSED. Use at your own risk. The code is given AS IS and may contain bugs or security issues. I have not audited it for security and do not take responsibility for any damage or data loss that may occur. You have been warned.
+UNLICENSED for now. Use at your own risk. I haven't audited this for security, and I'm not responsible if something breaks or data gets lost. You've been warned.
