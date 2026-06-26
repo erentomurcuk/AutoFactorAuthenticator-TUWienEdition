@@ -49,7 +49,7 @@ Each installer includes the native host. You still need to install the `.xpi` in
 1. Grab `TUWien-Auto-2FA-Setup.exe`.
 2. Run it (admin rights needed).
 3. The launcher pops up — press **Y** to register with Firefox.
-4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...`.
+4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...**.
 5. Pick the signed `.xpi`.
 6. Click the extension icon and paste your TOTP secret.
 
@@ -149,7 +149,8 @@ pnpm install
 pnpm run build
 ```
 
-This drops an unsigned `.zip` in `web-ext-artifacts/`. For a signed `.xpi` (permanent install without developer warnings):
+This drops an unsigned `.zip` in `web-ext-artifacts/`.
+For a signed `.xpi` (permanent install without developer warnings):
 
 ```bash
 pnpm exec web-ext sign \
@@ -160,6 +161,7 @@ pnpm exec web-ext sign \
 ```
 
 Get API credentials at [addons.mozilla.org](https://addons.mozilla.org/en-US/developers/addon/api/key/).
+This is free and you can do it yourself, or just download mine from the releases.
 
 ### macOS — DMG
 
@@ -183,7 +185,7 @@ The DMG lands in `native-host/build/macos/TUWien-Auto-2FA.dmg`.
 
 ### Windows — EXE installer (x64 + ARM64)
 
-The installer supports **both x64 and ARM64** in a single package. If an ARM64 binary isn't found, it falls back to x64-only.
+The installer supports **both x64 and ARM64** in a single package.
 
 ```powershell
 cd native-host\build\windows
@@ -241,16 +243,10 @@ Artifacts land in `native-host/build/linux/`:
 - `tuwien-auto-2fa-1.0.3-1.x86_64.rpm`
 - `TUWien-Auto-2FA-x86_64.AppImage`
 
-**Build everything for all platforms:**
-
-```bash
-cd native-host/build
-bash build-packages.sh all
-```
-
 ## Usage
 
 Once set up, just visit `https://idp.zid.tuwien.ac.at/` and log in. When the 2FA field shows up, the extension fills the code automatically. You still click the submit button yourself.
+This app will NOT autofill other credentials.
 
 ## Uninstall
 
