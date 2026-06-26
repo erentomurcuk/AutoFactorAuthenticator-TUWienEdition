@@ -48,7 +48,7 @@ Each installer includes the native host. You still need to install the `.xpi` in
 
 1. Grab `TUWien-Auto-2FA-Setup.exe`.
 2. Run it (admin rights needed).
-3. The launcher pops up — press **Y** to register with Firefox.
+3. The launcher pops up, press **Y** to register with Firefox.
 4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...**.
 5. Pick the signed `.xpi`.
 6. Click the extension icon and paste your TOTP secret.
