@@ -29,7 +29,7 @@ Content Script  ←  you still hit submit yourself
 
 ## Requirements
 
-- Firefox 128 or newer
+- Firefox 142 or newer
 
 ## Install (quick way)
 
@@ -57,12 +57,12 @@ Each installer includes the native host. You still need to install the `.xpi` in
 
 **Debian / Ubuntu**
 ```bash
-sudo dpkg -i tuwien-auto-2fa_1.0.3_amd64.deb
+sudo dpkg -i tuwien-auto-2fa_1.1.0_amd64.deb
 ```
 
 **Fedora / RHEL**
 ```bash
-sudo rpm -i tuwien-auto-2fa-1.0.3-1.x86_64.rpm
+sudo rpm -i tuwien-auto-2fa-1.1.0-1.x86_64.rpm
 ```
 
 **AppImage** (any distro)
@@ -239,8 +239,8 @@ bash build-appimage.sh   # downloads linuxdeploy automatically
 ```
 
 Artifacts land in `native-host/build/linux/`:
-- `tuwien-auto-2fa_1.0.3_amd64.deb`
-- `tuwien-auto-2fa-1.0.3-1.x86_64.rpm`
+- `tuwien-auto-2fa_1.1.0_amd64.deb`
+- `tuwien-auto-2fa-1.1.0-1.x86_64.rpm`
 - `TUWien-Auto-2FA-x86_64.AppImage`
 
 ## Usage

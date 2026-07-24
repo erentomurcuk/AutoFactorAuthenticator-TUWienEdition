@@ -1,5 +1,15 @@
 #!/bin/bash
+# prerm: remove the per-user native messaging manifest. Package
+# managers run this as root, so $HOME is /root and "rm -f" on the user's
+# path is a no-op anyway; we still attempt it in case the install was
+# performed via a non-root install method.
 set -e
 
-rm -f "$HOME/.mozilla/native-messaging-hosts/com.tuwien.2fa.json"
+rm -f "$HOME/.mozilla/native-messaging-hosts/com.tuwien.2fa.json" 2>/dev/null || true
+
+# Best-effort keychain cleanup. Note: this may not succeed when prerm is
+# run as root, since the credential lives in the real user's keyring
+# session. The launcher's own uninstall path is the reliable route.
 /opt/tuwien-2fa/tuwien-2fa-native --delete-credential 2>/dev/null || true
+
+exit 0

@@ -10,12 +10,52 @@ NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROJECT_ROOT="$(cd "$NATIVE_HOST_DIR/.." && pwd)"
 BUILD_DIR="$NATIVE_HOST_DIR/build"
 
+# Detect the current host OS.
+host_os() {
+  case "$(uname -s)" in
+    Darwin) echo "macos" ;;
+    Linux)  echo "linux" ;;
+    MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
+    *) echo "unsupported" ;;
+  esac
+}
+
 print_usage() {
   echo "Usage: $0 [macos|windows|linux|all]"
   echo "  macos   - Build DMG installer"
   echo "  windows - Build EXE installer"
   echo "  linux   - Build deb, rpm, and AppImage"
   echo "  all     - Build everything (default)"
+}
+
+# Decide whether a given target platform can be built on the current host.
+# A platform is buildable if either:
+#   * the host matches the target (native build), or
+#   * a prebuilt per-target binary is already present in target/ (cross-compile).
+can_build() {
+  local target="$1"
+  local host
+  host="$(host_os)"
+  if [ "$host" = "$target" ]; then
+    return 0
+  fi
+  # Cross-compile cases we support: prebuilt binaries must exist.
+  case "$target" in
+    windows)
+      [ -f "$NATIVE_HOST_DIR/target/x86_64-pc-windows-msvc/release/tuwien-2fa-native.exe" ] || \
+      [ -f "$NATIVE_HOST_DIR/target/x86_64-pc-windows-gnu/release/tuwien-2fa-native.exe" ]
+      ;;
+    linux)
+      [ -f "$NATIVE_HOST_DIR/target/release/tuwien-2fa-native" ]
+      ;;
+    macos)
+      [ -f "$NATIVE_HOST_DIR/target/x86_64-apple-darwin/release/tuwien-2fa-native" ] && \
+      [ -f "$NATIVE_HOST_DIR/target/aarch64-apple-darwin/release/tuwien-2fa-native" ]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 build_macos() {
@@ -44,6 +84,22 @@ build_linux() {
   cd - >/dev/null
 }
 
+run_or_skip() {
+  local target="$1"
+  if can_build "$target"; then
+    "build_$target"
+  else
+    echo ""
+    echo "Skipping $target: not the current host and no prebuilt $target binary found."
+    echo "  Cross-compile first, e.g.:"
+    case "$target" in
+      windows) echo "    cargo xwin build --release --target x86_64-pc-windows-msvc" ;;
+      linux)   echo "    cargo build --release" ;;
+      macos)   echo "    cargo build --release --target x86_64-apple-darwin --target aarch64-apple-darwin" ;;
+    esac
+  fi
+}
+
 main() {
   local platform="${1:-all}"
 
@@ -62,13 +118,13 @@ main() {
 
   case "$platform" in
     all)
-      build_macos
-      build_windows
-      build_linux
+      run_or_skip macos
+      run_or_skip windows
+      run_or_skip linux
       ;;
-    macos)   build_macos ;;
-    windows) build_windows ;;
-    linux)   build_linux ;;
+    macos)   run_or_skip macos ;;
+    windows) run_or_skip windows ;;
+    linux)   run_or_skip linux ;;
   esac
 
   echo ""

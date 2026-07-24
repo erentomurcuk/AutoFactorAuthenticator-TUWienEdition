@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=320, initial-scale=1">
+  <meta name="viewport" content="width=300, initial-scale=1">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -11,17 +11,15 @@
 
   <!-- Dashboard (seed configured) -->
   <div id="dashboardView" class="hidden">
-    <div class="totp-card">
-      <div class="totp-label">Current TOTP</div>
-      <div class="totp-code" id="totpCode">------</div>
-      <div class="totp-actions">
-        <button id="copyBtn" class="btn-icon" title="Copy to clipboard">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button id="refreshBtn" class="btn-icon" title="New code">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </button>
-      </div>
+    <div class="totp-label">Current TOTP</div>
+    <div class="totp-code" id="totpCode">------</div>
+    <div class="totp-actions">
+      <button id="copyBtn" class="btn-icon" title="Copy to clipboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button id="refreshBtn" class="btn-icon" title="New code">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
     </div>
     <div class="totp-timer">
       <div class="timer-bar" id="timerBar"></div>
@@ -42,14 +40,14 @@
 
   <!-- Setup (no seed) -->
   <div id="setupView" class="hidden">
-    <label for="seedInput">Paste your TOTP secret key (base32)</label>
-    <textarea id="seedInput" placeholder="e.g. JBSWY3DPEHPK3PXP"></textarea>
-    <div class="hint">Your secret key stays in your <span id="keychainName">keychain</span>. Never leaves your device.</div>
-    <button id="saveBtn" class="btn-primary" disabled>Save to Keychain</button>
+    <label for="seedInput">TOTP secret key (base32)</label>
+    <textarea id="seedInput" placeholder="JBSWY3DPEHPK3PXP" spellcheck="false" autocomplete="off"></textarea>
+    <div class="hint">Stored in your <span id="keychainName">keychain</span>. Never leaves your device.</div>
+    <button id="saveBtn" class="btn-primary" disabled>Save</button>
   </div>
 
   <p class="footer">
-    This is <strong>not</strong> an official tool by TU Wien. It is a self-made project provided <strong>AS IS</strong>. You are responsible for any possible damages or problems.
+    Not an official TU Wien tool. Self-made project, provided AS IS. You are responsible for any damages.
   </p>
 
   <script src="popup.js"></script>

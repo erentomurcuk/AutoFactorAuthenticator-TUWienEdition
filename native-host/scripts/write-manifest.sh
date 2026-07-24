@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-EXTENSION_ID="tuwien-auto-2fa@tuwien.ac.at"
+EXTENSION_ID="tuwien-auto-2fa@aGreatTUWienStudent"
 HOST_NAME="com.tuwien.2fa"
 
 get_manifest_dir() {

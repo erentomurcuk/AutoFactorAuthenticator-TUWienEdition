@@ -1,26 +1,29 @@
 {
   "manifest_version": 3,
   "name": "TU Wien Auto 2FA",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Automatically fills the Multi-Factor Authentication code for TU Wien login",
   "browser_specific_settings": {
     "gecko": {
       "id": "tuwien-auto-2fa@aGreatTUWienStudent",
-      "strict_min_version": "128.0"
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     }
   },
   "permissions": [
     "nativeMessaging"
   ],
   "host_permissions": [
-    "https://idp.zid.tuwien.ac.at/simplesaml/*"
+    "https://idp.zid.tuwien.ac.at/*"
   ],
   "background": {
     "scripts": ["background.js"]
   },
   "content_scripts": [
     {
-      "matches": ["https://idp.zid.tuwien.ac.at/simplesaml/*"],
+      "matches": ["https://idp.zid.tuwien.ac.at/*"],
       "js": ["content_script.js"],
       "run_at": "document_idle"
     }

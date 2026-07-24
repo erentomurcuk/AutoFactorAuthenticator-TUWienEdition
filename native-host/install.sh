@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-EXTENSION_ID="tuwien-auto-2fa@tuwien.ac.at"
+EXTENSION_ID="tuwien-auto-2fa@aGreatTUWienStudent"
 HOST_NAME="com.tuwien.2fa"
 BINARY_NAME="tuwien-2fa-native"
 

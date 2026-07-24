@@ -13,6 +13,7 @@ REM --- Uninstall mode ---
 if "%~1"=="--uninstall" (
     echo Uninstalling TU Wien 2FA...
     if exist "%MANIFEST_FILE%" del "%MANIFEST_FILE%"
+    reg delete "HKCU\Software\Mozilla\NativeMessagingHosts\com.tuwien.2fa" /f >nul 2>&1
     if exist "%BINARY_PATH%" "%BINARY_PATH%" --delete-credential 2>nul
     echo Uninstall complete.
     pause
@@ -33,6 +34,7 @@ if exist "%MANIFEST_FILE%" (
     if /i "!CHOICE!"=="Y" (
         echo Uninstalling...
         del "%MANIFEST_FILE%"
+        reg delete "HKCU\Software\Mozilla\NativeMessagingHosts\com.tuwien.2fa" /f >nul 2>&1
         "%BINARY_PATH%" --delete-credential 2>nul
         echo Uninstall complete.
     ) else (
@@ -59,6 +61,9 @@ if exist "%MANIFEST_FILE%" (
             echo   "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]
             echo }
         ) > "%MANIFEST_FILE%"
+        REM Firefox reads the default value of this registry key as the path to
+        REM the manifest JSON file (not the binary itself).
+        reg add "HKCU\Software\Mozilla\NativeMessagingHosts\com.tuwien.2fa" /ve /d "%MANIFEST_FILE%" /f >nul
         echo.
         echo Installation complete!
         echo TU Wien 2FA is now ready to use with Firefox.

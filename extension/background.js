@@ -58,8 +58,15 @@ function cacheTOTP(code, counter) {
   }, (TOTP_WINDOW_SECONDS + 1) * 1000);
 }
 
+const POPUP_URL = browser.runtime.getURL("popup/popup.html");
+
+function isPopup(sender) {
+  return sender.id === browser.runtime.id && !!sender.url && sender.url.startsWith(POPUP_URL);
+}
+
 browser.runtime.onMessage.addListener((msg, sender) => {
   if (sender.id !== browser.runtime.id) return;
+
   if (msg.type === "request_totp") {
     const now = Date.now() / 1000;
     const currentCounter = Math.floor(now / TOTP_WINDOW_SECONDS);
@@ -79,16 +86,7 @@ browser.runtime.onMessage.addListener((msg, sender) => {
       throw new Error(response.message || "Seed not configured");
     });
   }
-});
 
-const POPUP_URL = browser.runtime.getURL("popup/popup.html");
-
-function isPopup(sender) {
-  return sender.id === browser.runtime.id && !!sender.url && sender.url.startsWith(POPUP_URL);
-}
-
-browser.runtime.onMessage.addListener((msg, sender) => {
-  if (sender.id !== browser.runtime.id) return;
   if (msg.type === "ping") {
     return browser.runtime.sendNativeMessage(NATIVE_HOST, { command: "ping" }).then((r) => ({
       success: r.status === "ok",

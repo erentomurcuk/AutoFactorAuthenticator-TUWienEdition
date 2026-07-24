@@ -66,14 +66,26 @@ is_installed() {
 }
 
 check_dependencies() {
-  # Check if libsecret is available
-  if ! "$BINARY_PATH" --help >/dev/null 2>&1; then
+  # Actually exercise the keyring backend by sending a "probe" native
+  # messaging command to the binary (u32 little-endian length + JSON).
+  # This catches both missing libsecret and an unusable Secret Service.
+  local payload='{"command":"probe"}'
+  local len=${#payload}
+  local resp
+  resp=$(printf "$(printf '\\x%02x\\x%02x\\x%02x\\x%02x' \
+            $((len & 0xFF)) $(((len >> 8) & 0xFF)) \
+            $(((len >> 16) & 0xFF)) $(((len >> 24) & 0xFF)))%s" \
+            "$payload" | "$BINARY_PATH" 2>/dev/null) || true
+
+  if ! echo "$resp" | grep -aq '"status"[[:space:]]*:[[:space:]]*"ok"'; then
     show_dialog "Missing Dependencies" \
-      "The native host binary requires libsecret to store credentials securely.\n\n\
-Please install the required package:\n\n\
-  Ubuntu/Debian: sudo apt install libsecret-1-0\n\
+      "The native host could not reach a Secret Service backend (libsecret).\n\n\
+This usually means no keyring daemon is running. Install/start one:\n\n\
+  Ubuntu/Debian: sudo apt install libsecret-1-0 gnome-keyring\n\
   Fedora/RHEL: sudo dnf install libsecret\n\
-  Arch: sudo pacman -S libsecret" \
+  Arch: sudo pacman -S libsecret gnome-keyring\n\n\
+KDE users can use KWallet or enable KeePassXC's Secret Service plugin.\n\n\
+Raw response: ${resp:-<none>}" \
       error
     exit 1
   fi

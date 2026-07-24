@@ -1,5 +1,5 @@
 Package: tuwien-auto-2fa
-Version: 1.0.3
+Version: 1.1.0
 Architecture: amd64
 Maintainer: TU Wien Auto 2FA
 Description: Firefox extension for automatic TU Wien 2FA

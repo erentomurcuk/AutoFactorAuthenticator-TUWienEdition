@@ -1,3 +1,5 @@
+const TOTP_WINDOW_SECONDS = 30;
+
 function isVisibleTextInput(el) {
   if (!(el instanceof HTMLInputElement)) return false;
   const allowedTypes = ["text", "tel", "password", "number", ""];
@@ -7,19 +9,32 @@ function isVisibleTextInput(el) {
   return true;
 }
 
+function currentTOTPCounter() {
+  return Math.floor(Date.now() / 1000 / TOTP_WINDOW_SECONDS);
+}
+
 function fillTOTP() {
   const field = document.getElementById("totp");
-  if (!field || field.dataset.tuwienAutofilled) return;
-  if (!isVisibleTextInput(field)) return;
+  if (!field || !isVisibleTextInput(field)) return;
+
+  // Re-fill whenever the TOTP window has advanced since we last filled this
+  // element. Avoids the "autofilled once, never again" problem when the
+  // same #totp input is reused after a wrong submission.
+  const lastCounter = Number(field.dataset.tuwienAutofilledCounter || -1);
+  const now = currentTOTPCounter();
+  if (field.dataset.tuwienAutofilled === "true" && lastCounter === now) return;
 
   field.dataset.tuwienAutofilled = "true";
+  field.dataset.tuwienAutofilledCounter = String(now);
+
   browser.runtime.sendMessage({ type: "request_totp" }).then((res) => {
-    const code = res.code || res;
-    field.value = code;
+    field.value = res.code;
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new Event("change", { bubbles: true }));
   }).catch(() => {
+    // Allow a retry on the next tick / DOM change.
     delete field.dataset.tuwienAutofilled;
+    delete field.dataset.tuwienAutofilledCounter;
   });
 }
 

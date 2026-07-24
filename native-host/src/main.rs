@@ -154,6 +154,22 @@ fn main() -> io::Result<()> {
                 data: Some("pong".into()),
                 message: None,
             },
+            "probe" => {
+                // Actually exercise the keyring backend so the launcher can
+                // tell whether libsecret (or the platform equivalent) is
+                // usable. NoEntry counts as success: the backend is
+                // reachable, just empty.
+                match keyring::Entry::new(SERVICE, SEED_KEY) {
+                    Ok(entry) => {
+                        match entry.get_password() {
+                            Ok(_) => Response { status: "ok".into(), data: Some("reachable".into()), message: None },
+                            Err(keyring::Error::NoEntry) => Response { status: "ok".into(), data: Some("reachable".into()), message: None },
+                            Err(e) => Response { status: "error".into(), data: None, message: Some(format!("Keyring error: {e}").chars().take(256).collect()) },
+                        }
+                    }
+                    Err(_) => keyring_error(),
+                }
+            }
             "check" => {
                 match keyring::Entry::new(SERVICE, SEED_KEY) {
                     Ok(entry) => {

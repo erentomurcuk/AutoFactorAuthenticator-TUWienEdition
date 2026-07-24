@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_ROOT="$(cd "$NATIVE_HOST_DIR/.." && pwd)"
 
-VERSION="1.0.3"
+VERSION="1.1.0"
 RELEASE="1"
 
 # Ensure Linux binary exists

@@ -11,7 +11,6 @@ pnpm-lock.yaml
 bun.lock
 
 # Installer build outputs
-.vscode/settings.json
 *.dmg
 *.msi
 *.exe
@@ -25,10 +24,20 @@ native-host/build/*/*.png
 native-host/build/*/tuwien-2fa-native*
 native-host/build/*/*.xpi
 native-host/build/*/*.txt
+native-host/build/*/com.tuwien.2fa.json
 native-host/build/macos/TU Wien 2FA.app/
 native-host/build/linux/rpmbuild/
 native-host/build/linux/linuxdeploy*.AppImage
+# deb build staging tree (any version)
+native-host/build/linux/tuwien-auto-2fa_*/
+# AMO upload markers
+extension/.amo-upload-uuid
+*.xpi
 
 *.swp
 *.swo
 .DS_Store
+
+# Release artifacts
+releases/
+*.xpi

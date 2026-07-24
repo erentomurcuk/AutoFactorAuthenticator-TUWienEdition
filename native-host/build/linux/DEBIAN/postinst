@@ -1,16 +1,14 @@
 #!/bin/bash
+# postinst: files are in place. We deliberately do NOT write the native
+# messaging manifest here, because dpkg runs maintainer scripts as root
+# with HOME=/root, which would place the manifest in /root/.mozilla
+# instead of the actual user's home.
+#
+# The user simply launches "TU Wien 2FA" once from their app menu; the
+# launcher (launcher.sh) writes the manifest for their own $HOME.
 set -e
 
-BINARY_PATH="/opt/tuwien-2fa/tuwien-2fa-native"
-MANIFEST_DIR="$HOME/.mozilla/native-messaging-hosts"
+echo "TU Wien Auto 2FA installed."
+echo "Launch 'TU Wien 2FA' from your application menu to register it with Firefox."
 
-mkdir -p "$MANIFEST_DIR"
-cat > "$MANIFEST_DIR/com.tuwien.2fa.json" << EOF
-{
-  "name": "com.tuwien.2fa",
-  "description": "Native host for TU Wien Auto 2FA",
-  "path": "$BINARY_PATH",
-  "type": "stdio",
-  "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]
-}
-EOF
+exit 0

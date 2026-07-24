@@ -1,5 +1,5 @@
 Name: tuwien-auto-2fa
-Version: 1.0.3
+Version: 1.1.0
 Release: 1
 Summary: Firefox extension for automatic TU Wien 2FA
 License: MIT
@@ -28,21 +28,15 @@ if [ -f %{_sourcedir}/tuwien-2fa.svg ]; then
 fi
 
 %post
-BINARY_PATH="/opt/tuwien-2fa/tuwien-2fa-native"
-MANIFEST_DIR="$HOME/.mozilla/native-messaging-hosts"
-mkdir -p "$MANIFEST_DIR"
-cat > "$MANIFEST_DIR/com.tuwien.2fa.json" << EOF
-{
-  "name": "com.tuwien.2fa",
-  "description": "Native host for TU Wien Auto 2FA",
-  "path": "$BINARY_PATH",
-  "type": "stdio",
-  "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]
-}
-EOF
+# Do not write the native messaging manifest here: rpm runs %post as root
+# with HOME=/root, so the manifest would end up in /root/.mozilla and the
+# real user's Firefox would not see it. Instruct the user to launch the
+# app once so launcher.sh writes the manifest for their own $HOME.
+echo "TU Wien Auto 2FA installed."
+echo "Launch 'TU Wien 2FA' from your application menu to register it with Firefox."
 
 %preun
-rm -f "$HOME/.mozilla/native-messaging-hosts/com.tuwien.2fa.json"
+rm -f "$HOME/.mozilla/native-messaging-hosts/com.tuwien.2fa.json" 2>/dev/null || true
 /opt/tuwien-2fa/tuwien-2fa-native --delete-credential 2>/dev/null || true
 
 %files

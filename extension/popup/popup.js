@@ -58,12 +58,16 @@ function validateBase32(str) {
 async function fetchTOTP() {
   try {
     const result = await browser.runtime.sendMessage({ type: "request_totp" });
-    currentCode = result.code || result;
+    currentCode = result.code;
     totpCodeEl.textContent = currentCode;
+    setStatus("Keychain: configured", "ok");
     startCountdown(result.expires_in || 30);
     return true;
   } catch (e) {
     console.error("TOTP fetch error:", e);
+    totpCodeEl.textContent = "------";
+    currentCode = null;
+    setStatus("Could not generate code: " + (e.message || "unknown error"), "error");
     return false;
   }
 }
@@ -74,14 +78,18 @@ function startCountdown(seconds) {
   const total = Math.max(1, seconds);
   let remaining = total;
 
-  function tick() {
+  async function tick() {
     remaining = Math.max(0, remaining - 1);
     timerBar.style.width = (remaining / total) * 100 + "%";
     timerText.textContent = remaining + "s";
     if (remaining <= 0) {
       clearInterval(countdownInterval);
       countdownInterval = null;
-      fetchTOTP();
+      // Retry on failure with a short backoff instead of silently dying.
+      const ok = await fetchTOTP();
+      if (!ok) {
+        setTimeout(fetchTOTP, 5000);
+      }
     }
   }
 
