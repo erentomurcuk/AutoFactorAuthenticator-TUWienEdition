@@ -28,10 +28,12 @@ prove you got them all.
 ## 2. What this is
 
 Firefox MV3 extension (`extension/`, plain JS) + Rust native-messaging host
-(`native-host/`) that stores ONE TOTP seed in the OS keyring. The extension
-generates RFC 6238 codes with Web Crypto; the host only serves/cleans the seed.
-The content script fills the TOTP field on `idp.zid.tuwien.ac.at`; the user
-submits.
+(`native-host/`). The host stores ONE TOTP seed in the OS keyring **and
+generates the RFC 6238 codes itself** (HMAC-SHA1 in Rust, unit-tested against
+RFC 4226 vectors via `cargo test`). Since the 1.2 `get_code` protocol change
+Firefox never receives the seed — only finished codes; the extension has no
+crypto at all. The content script fills the TOTP field on
+`idp.zid.tuwien.ac.at`; the user submits.
 
 ## 3. Layout
 
@@ -146,29 +148,49 @@ Response: same framing, `{"status":"ok"|"error","data":?,"message":?}`.
 | `ping` | health check → `data:"pong"` |
 | `probe` | exercises the keyring backend (NoEntry = reachable-and-empty = pass); used by `build/linux/launcher.sh` |
 | `check` | is a seed configured (`data:"configured"` / null + message) |
-| `get_seed` | the cleaned uppercase base32 seed (error `No seed configured` if unset) |
+| `get_code` | **the** data command: generates the current 6-digit code in Rust → `data:{"code":"123456","ttl":seconds}` (ttl 1–30); error `No seed configured` |
 | `store_seed` | `{seed: …}`; validated & canonicalised (padding/whitespace/dashes stripped, chars A–Z/2–7 only, len 16–256) |
-| `delete_seed` | removes the keyring entry (both service names, idempotent on NoEntry) |
+| `delete_seed` | removes the keyring entry (idempotent on NoEntry) |
+
+**`get_seed` was REMOVED in 1.2** — asking the host for the raw seed
+contradicts the keychain story once the host can generate codes itself. If an
+old build still sends it, it gets `Unknown command`. Do not re-add it casually;
+it would also require re-testing the extension's error paths.
+
+TOTP constants: SHA-1, 6 digits, 30 s window; base32 decode drops a trailing
+partial byte (same rule as every RFC 4648 decoder), so non-canonical
+(8-char-multiple) seeds behave like everywhere else. `Response.data` is a JSON
+value (string for ping/probe/check, object for `get_code`, `null` elsewhere).
 
 CLI flags on the host binary: `--delete-credential`, `--version`, `--help`;
 plus the manifest-path-arg-first convention Firefox passes on macOS
 (ignore argv except the known flags).
 
-## 7. Smoke tests (no test suite exists — this is the minimum bar)
+## 7. Smoke tests (no browser-driven suite exists — this is the minimum bar)
 
 ```bash
-# protocol round-trip incl. hostile inputs (python script from session log)
-# TOTP reference check: python hmac/base32 snippet over the stored seed
+# Rust unit tests NOW EXIST (base32 + RFC 4226 vectors + validator):
+cd native-host && cargo test --release
+
+# protocol round-trip incl. hostile inputs + a live get_code cross-check
+# against a python RFC-6238 reference (python script from session log)
 
 # Windows-shaped manifest must parse as JSON (forward slashes):
 #   simulate cygpath -m output manually and json.loads it
 
-# Lint the add-on:
+# Lint + package the add-on:
 pnpm run lint        # 0 errors 0 warnings
+pnpm run build
 
 # Keyring delete of BOTH service names:
 ./target/release/autotiss2fa-native --delete-credential
 ```
+
+> ⚠️ **`cargo test` does NOT rebuild the shipped binary.** The DT-truncation
+> bug above shipped because a `cargo test --release && cargo build` chain
+> stopped at the failing test and the *stale* binary kept answering get_code
+> with wrong values. After ANY main.rs change: run `cargo build --release`
+> and re-run the protocol smoke against the fresh binary.
 
 ## 8. AMO submission notes (recorded, not to be re-derived)
 
@@ -188,13 +210,13 @@ pnpm run lint        # 0 errors 0 warnings
 - **Microsoft SSO (login.microsoftonline.com) 2FA** for TU Wien mail — the
   acknowledged next feature; may become its own variant rather than a
   second content script here.
-- **Host-side TOTP generation** — move HMAC generation into the Rust host so
-  Firefox handles 6-digit codes only. Requires a protocol extension
-  (`get_code`) and background.js changes; keep the seed out of `browser`.
+- ~~Host-side TOTP generation~~ **DONE in 1.2** (`get_code`; `get_seed`
+  removed). Any new seed-sensitive command must re-justify why the browser
+  needs the data.
 - **Per-variant keyring labels** are already the pattern
   (`AutoTISS2FA` / any future fork) — keep it when forking.
 
-## 9. Change log (v1.2.0)
+## 10. Change log (v1.2.0)
 
 - Full rebrand: AutoFactorAuthenticator (repo) / AutoTISS2FA (this build);
   new add-on id, new host name, new binary/deb/rpm/AppImage/DMG/EXE names.
@@ -228,3 +250,12 @@ pnpm run lint        # 0 errors 0 warnings
 - Upgrades from ≤1.1 require a FULL uninstall+reinstall (README "Upgrading
   from a pre-1.2 version"): identity rename means old host ↔ new extension
   ID cannot connect.
+- **Host-side TOTP generation (get_code) landed in 1.2**: HMAC-SHA1 in Rust,
+  `cargo test` pins RFC 4226 vectors; `get_seed` removed — Firefox never
+  receives the seed, only `{code, ttl}`. The DT-truncation bug this
+  introduced (shift 32 + 5 bytes instead of the RFC's shift 24 + 4) was
+  caught by those vectors and is why the stale-binary warning in §7 exists.
+- Popup redesigned (token-driven light/dark, ring countdown, grouped code,
+  live validation feedback, inline delete confirm) and the icon replaced
+  (icon.svg v2: gradient shield carrying digit bars; feeds Firefox, icns,
+  hicolor + AppImage from one file).

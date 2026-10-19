@@ -1,12 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- AutoTISS2FA / AutoFactorAuthenticator icon (v2, 2026).
+       A shield carrying a one-time code: three "digit bars" like the ones you
+       type, one lit as it fills. Single file feeds every platform:
+       Firefox toolbar icon (V) here, the macOS .icns pipeline
+       (build/macos/svg-to-icns.sh), the deb/rpm hicolor icon and the AppImage
+       PNG (rendered by cairosvg at build time). Keep shapes bold: it must
+       still read at 16 px toolbar size. -->
   <defs>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <linearGradient id="glowbar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#FBBF24"/>
+    </linearGradient>
   </defs>
-  <rect width="48" height="48" rx="12" fill="#003366"/>
-  <path d="M24 9 L36 14.5 V25 C36 32.5 24 40 24 40 C24 40 12 32.5 12 25 V14.5 L24 9Z" fill="#ffffff" filter="url(#glow)"/>
-  <path d="M24 11 L34 15.5 V25 C34 31.5 24 38 24 38 C24 38 14 31.5 14 25 V15.5 L24 11Z" fill="#f8f7ff"/>
-  <path d="M19 24 L23 28 L30 20" stroke="#003366" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+
+  <!-- soft inner highlight, keeps the flat square from looking dead -->
+  <ellipse cx="256" cy="118" rx="200" ry="90" fill="#ffffff" opacity="0.10"/>
+
+  <!-- shield: bold silhouette, small stroke weight so it stays crisp -->
+  <path d="M256 84 L398 136 V246 C398 336 342 406 256 442 C170 406 114 336 114 246 V136 Z"
+        fill="#FFFFFF"/>
+  <path d="M256 104 L378 150 V246 C378 324 331 382 256 414 C181 382 134 324 134 246 V150 Z"
+        fill="#EEF2FF"/>
+
+  <!-- the code: three digit bars, the "next" digit mid-entry -->
+  <rect x="196" y="196" width="120" height="30" rx="15" fill="url(#glowbar)"/>
+  <rect x="156" y="244" width="200" height="30" rx="15" fill="#6366F1"/>
+  <rect x="176" y="292" width="160" height="30" rx="15" fill="#0EA5E9"/>
 </svg>

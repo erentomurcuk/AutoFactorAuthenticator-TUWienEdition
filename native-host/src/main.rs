@@ -20,11 +20,13 @@ struct Request {
     seed: Option<String>,
 }
 
+/// `data` is a JSON value: a string for ping/probe/check, an object
+/// (`{"code": "…", "ttl": …}`) for get_code, `null` where absent.
 #[derive(Serialize)]
 struct Response {
     status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<String>,
+    data: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     message: Option<String>,
 }
@@ -100,6 +102,94 @@ fn unknown_command(_cmd: &str) -> Response {
     Response { status: "error".into(), data: None, message: Some("Unknown command".into()) }
 }
 
+// ---- keyring access --------------------------------------------------------
+
+/// Reads the stored seed. `Ok(None)` = not configured; `Err(())` = backend error.
+fn load_seed() -> Result<Option<String>, ()> {
+    match keyring::Entry::new(SERVICE, SEED_KEY) {
+        Ok(entry) => match entry.get_password() {
+            Ok(pw) => Ok(Some(pw)),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(_) => Err(()),
+        },
+        Err(_) => Err(()),
+    }
+}
+
+// ---- TOTP (RFC 6238, SHA-1, 6 digits, 30 s period) -------------------------
+// The golden rule of this project: the seed stays in this process. Firefox
+// asks for a CODE, never for the seed.
+
+/// Standard RFC 4648 base32 alphabet, canonical (uppercase, no padding kept).
+const B32: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+fn base32_decode(s: &str) -> Option<Vec<u8>> {
+    let mut out = Vec::with_capacity(s.len() * 5 / 8);
+    let mut acc: u32 = 0;
+    let mut bits: u32 = 0;
+    for c in s.bytes() {
+        let idx = B32.iter().position(|a| a.eq_ignore_ascii_case(&c))?;
+        acc = (acc << 5) | idx as u32;
+        bits += 5;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+        }
+    }
+    // Trailing bits (< 8 of them) are the canonical padding remainder: they
+    // carry fewer bits than one byte, exactly as every RFC 4648 decoder (and
+    // the previous JS implementation) treats them. Nothing to do.
+    Some(out)
+}
+
+fn totp_code(secret: &str, counter: u64) -> Option<String> {
+    use hmac::{Hmac, Mac};
+    use sha1::Sha1;
+    type HmacSha1 = Hmac<Sha1>;
+
+    let key = base32_decode(secret)?;
+    let mut mac = HmacSha1::new_from_slice(&key).ok()?;
+    mac.update(&counter.to_be_bytes());
+    let digest = mac.finalize().into_bytes();
+    let d = &digest[..];
+    let off = (d[19] & 0x0f) as usize;
+    let bin: u64 = ((d[off] as u64 & 0x7f) << 24)
+        | ((d[off + 1] as u64) << 16)
+        | ((d[off + 2] as u64) << 8)
+        | (d[off + 3] as u64);
+    Some(format!("{:0width$}", bin % 1_000_000, width = 6))
+}
+
+/// `Ok(None)` = no seed configured; `Err(())` = backend error; `Ok(Some(..))` =
+/// the current 6-digit code plus seconds until it expires.
+fn current_code() -> Result<Option<(String, u64)>, ()> {
+    let Some(seed) = load_seed()? else { return Ok(None) };
+    let counter = now_counter();
+    match totp_code(&seed, counter) {
+        Some(code) => {
+            let ttl = SEED_WINDOW - (now_unix() % SEED_WINDOW);
+            Ok(Some((code, ttl)))
+        }
+        // A stored seed should never fail to decode (it was validated at
+        // store time), but a manually edited or pre-1.1 junk entry must not
+        // masquerade as a wrong-code problem: report it as unconfigured.
+        None => Err(()),
+    }
+}
+
+fn now_unix() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+const SEED_WINDOW: u64 = 30;
+fn now_counter() -> u64 {
+    now_unix() / SEED_WINDOW
+}
+
+
 fn delete_stored_seed() -> io::Result<()> {
     // Remove the current service name, and the pre-rename one as well, so an
     // upgrade can never leave the old seed orphaned in the keychain.
@@ -173,44 +263,48 @@ fn main() -> io::Result<()> {
             },
             "probe" => {
                 // Actually exercise the keyring backend so the launcher can
-                // tell whether libsecret (or the platform equivalent) is
-                // usable. NoEntry counts as success: the backend is
-                // reachable, just empty.
-                match keyring::Entry::new(SERVICE, SEED_KEY) {
-                    Ok(entry) => {
-                        match entry.get_password() {
-                            Ok(_) => Response { status: "ok".into(), data: Some("reachable".into()), message: None },
-                            Err(keyring::Error::NoEntry) => Response { status: "ok".into(), data: Some("reachable".into()), message: None },
+                // tell whether the Secret Service (or the platform
+                // equivalent) is usable. NoEntry counts as success: the
+                // backend is reachable, just empty.
+                match load_seed() {
+                    Ok(_) => Response { status: "ok".into(), data: Some("reachable".into()), message: None },
+                    Err(()) => {
+                        // Distinguish a reachable-but-failing backend from an
+                        // unavailable entry creation by probing directly.
+                        match keyring::Entry::new(SERVICE, SEED_KEY) {
+                            Ok(entry) => {
+                                let detail = match entry.get_password() {
+                                    Err(e) => format!("{e}"),
+                                    Ok(_) => String::new(),
+                                };
+                                Response { status: "error".into(), data: None, message: Some(format!("Keyring error: {}", detail.chars().take(256).collect::<String>())) }
+                            }
                             Err(e) => Response { status: "error".into(), data: None, message: Some(format!("Keyring error: {e}").chars().take(256).collect()) },
                         }
                     }
-                    Err(_) => keyring_error(),
                 }
             }
             "check" => {
-                match keyring::Entry::new(SERVICE, SEED_KEY) {
-                    Ok(entry) => {
-                        match entry.get_password() {
-                            Ok(_) => keyring_ok(),
-                            Err(keyring::Error::NoEntry) => {
-                                Response { status: "ok".into(), data: None, message: Some("No seed configured".into()) }
-                            }
-                            Err(_) => keyring_error(),
-                        }
-                    }
-                    Err(_) => keyring_error(),
+                match load_seed() {
+                    Ok(Some(_)) => keyring_ok(),
+                    Ok(None) => not_found(),
+                    Err(()) => keyring_error(),
                 }
             }
-            "get_seed" => {
-                match keyring::Entry::new(SERVICE, SEED_KEY) {
-                    Ok(entry) => {
-                        match entry.get_password() {
-                            Ok(pw) => Response { status: "ok".into(), data: Some(pw), message: None },
-                            Err(keyring::Error::NoEntry) => not_found(),
-                            Err(_) => keyring_error(),
+            "get_code" => {
+                // THE v1.2 protocol change: Firefox asks for a 6-digit code
+                // (plus its TTL), never for the seed. Owner of the seed is
+                // this process and the OS keyring; nothing else.
+                match current_code() {
+                    Ok(Some((code, ttl))) => {
+                        Response {
+                            status: "ok".into(),
+                            data: Some(serde_json::json!({ "code": code, "ttl": ttl })),
+                            message: None,
                         }
                     }
-                    Err(_) => keyring_error(),
+                    Ok(None) => not_found(),
+                    Err(()) => keyring_error(),
                 }
             }
             "store_seed" => {
@@ -257,4 +351,60 @@ fn main() -> io::Result<()> {
         write_message(&response)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // RFC 6238 appendix-B secret "12345678901234567890" as base32 (SHA-1).
+    const RFC_SEED: &str = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+
+    #[test]
+    fn base32_roundtrip_rfc_secret() {
+        assert_eq!(
+            base32_decode(RFC_SEED).as_deref(),
+            Some(&b"12345678901234567890"[..])
+        );
+    }
+
+    #[test]
+    fn base32_rejects_foreign_chars() {
+        assert!(base32_decode("0123456789").is_none()); // 0/1/8/9 not in alphabet
+        assert!(base32_decode("AB!").is_none());
+    }
+
+    #[test]
+    fn totp_rfc4226_six_digit_vectors() {
+        // HOTP (RFC 4226 §5.4) codes for counters 0..4 = the same values TOTP
+        // produces for the matching window indices (TOTP(counter 0-4)).
+        assert_eq!(totp_code(RFC_SEED, 0).as_deref(), Some("755224"));
+        assert_eq!(totp_code(RFC_SEED, 1).as_deref(), Some("287082"));
+        assert_eq!(totp_code(RFC_SEED, 2).as_deref(), Some("359152"));
+        assert_eq!(totp_code(RFC_SEED, 3).as_deref(), Some("969429"));
+        assert_eq!(totp_code(RFC_SEED, 4).as_deref(), Some("338314"));
+    }
+
+    #[test]
+    fn totp_large_counter_stays_stable() {
+        // Counter > u32 exercises the 64-bit big-endian encoding.
+        assert!(totp_code(RFC_SEED, u32::MAX as u64 + 1).is_some());
+        let a = totp_code(RFC_SEED, u32::MAX as u64 + 1).unwrap();
+        assert!(a.len() == 6 && a.chars().all(|c| c.is_ascii_digit()));
+    }
+
+    #[test]
+    fn validator_cleaning() {
+        assert_eq!(validate_and_clean_seed("jbsw y3dp-ehpk=3pXP").unwrap(), "JBSWY3DPEHPK3PXP");
+        assert!(validate_and_clean_seed("0123456789abcdef").is_err()); // 0/1 invalid
+        assert!(validate_and_clean_seed("TOOSHORT").is_err());
+        assert!(validate_and_clean_seed(&"X".repeat(300)).is_err());
+    }
+
+    #[test]
+    fn ttl_is_window_fraction() {
+        let t = now_unix();
+        assert!(SEED_WINDOW - (t % SEED_WINDOW) >= 1);
+        assert!(SEED_WINDOW - (t % SEED_WINDOW) <= SEED_WINDOW);
+    }
 }

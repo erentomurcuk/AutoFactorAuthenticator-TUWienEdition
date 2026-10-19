@@ -21,10 +21,10 @@ Content Script
         ▼  asks for a TOTP code
 Background Script
         │
-        ▼  grabs the seed from the keychain
+        ▼  get_code — never the seed
 Rust Native Host → OS Keychain
-        │
-        ▼  generates TOTP (RFC 6238) with Web Crypto API
+        │  HMAC-SHA1 TOTP (RFC 6238), generated in Rust
+        ▼  returns { code: "123456", ttl: seconds }
 Background Script
         │
         ▼  fills the code in
@@ -33,10 +33,12 @@ Content Script  ←  you still hit submit yourself
 
 Key properties:
 
-- Your TOTP seed **never leaves your machine**. It is stored in your OS
-  keychain (Apple Keychain, Windows Credential Manager, or the Linux Secret
-  Service providers — GNOME Keyring, KDE Wallet, KeePassXC) via the Rust
-  native-messaging host.
+- Your TOTP seed **never leaves your machine** — and since 1.2, **Firefox
+  never sees it at all**. The seed is stored in your OS keychain (Apple
+  Keychain, Windows Credential Manager, or the Linux Secret Service providers
+  — GNOME Keyring, KDE Wallet, KeePassXC) via the Rust native-messaging host,
+  which generates the RFC 6238 codes itself. The extension only receives a
+  finished 6-digit code plus its seconds-to-expiry.
 - Nothing is sent anywhere: no cloud, no telemetry, no network access at all.
   The extension's `connect-src 'none'` CSP forbids even it from opening a
   connection.
@@ -226,7 +228,7 @@ AutoFactorAuthenticator/
 |-------|--------------|
 | At rest | TOTP seed in the OS keychain under service name `AutoTISS2FA` |
 | In transit | Native messaging over stdio, only to this extension id |
-| In memory | Seed cached in the background page never longer than ~31 s, cleared on the window boundary |
+| In memory | The seed never enters Firefox. The background page holds only the finished 6-digit code (and its TTL); the host computes codes one call at a time |
 | Network | Nothing is sent anywhere; the CSP blocks outbound connections |
 | Keyring delete | `--delete-credential` removes both the current and the pre-1.2 service name |
 
@@ -234,11 +236,12 @@ AutoFactorAuthenticator/
 
 - **Microsoft SSO support** for TU Wien mail (login.microsoftonline.com MFA) —
   under evaluation; a follow-up variant or a shared engine within this one.
-- **Host-side TOTP generation** — currently Firefox generates the 6-digit code
-  from the seed fetched over native messaging; moving generation into the Rust
-  host would mean Firefox never touches the seed at all (defense in depth).
 - **Site-agnostic fork** for arbitrary websites is intentionally a separate
   project, not a feature of this one.
+
+Done in 1.2: **host-side TOTP generation** — the seed no longer leaves the
+native host at all; Firefox only receives finished 6-digit codes ("How it
+works" above).
 
 ## Notes
 

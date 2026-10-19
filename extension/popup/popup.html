@@ -2,49 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=300, initial-scale=1">
+  <meta name="viewport" content="width=360, initial-scale=1">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <h1>AutoTISS2FA</h1>
-  <div id="status" class="status info">Checking...</div>
+  <header class="top">
+    <img class="logo" src="../icons/icon.svg" alt="" width="28" height="28">
+    <h1>AutoTISS2FA</h1>
+  </header>
+  <div id="status" class="status info">Checking…</div>
 
   <!-- Dashboard (seed configured) -->
-  <div id="dashboardView" class="hidden">
-    <div class="totp-label">Current TOTP</div>
-    <div class="totp-code" id="totpCode">------</div>
-    <div class="totp-actions">
-      <button id="copyBtn" class="btn-icon" title="Copy to clipboard">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      </button>
-      <button id="refreshBtn" class="btn-icon" title="New code">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      </button>
-    </div>
-    <div class="totp-timer">
-      <div class="timer-bar" id="timerBar"></div>
-    </div>
-    <span class="timer-text" id="timerText"></span>
+  <main id="dashboardView" class="hidden">
+    <div class="code-card">
+      <div class="code-label">CURRENT CODE</div>
 
-    <div id="copiedToast" class="copied-toast hidden">Copied to clipboard!</div>
+      <div class="ring-row">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-track" cx="60" cy="60" r="52"/>
+            <circle class="ring-value" id="ringValue" cx="60" cy="60" r="52"/>
+          </svg>
+          <span class="ring-text" id="timerText">–</span>
+        </div>
 
-    <div class="divider"></div>
+        <div class="code-block">
+          <div class="totp-code" id="totpCode" aria-live="polite">·· ·· ··</div>
+          <div class="code-sub" id="codeSub">generating…</div>
+        </div>
+      </div>
 
-    <button id="deleteBtn" class="btn-danger">Remove Seed</button>
-    <div id="confirmDelete" class="hidden confirm-box">
-      <p>Remove seed from keychain?</p>
-      <button id="confirmYesBtn" class="btn-danger">Yes, Remove</button>
-      <button id="confirmNoBtn" class="btn-secondary">Cancel</button>
+      <div class="actions">
+        <button id="copyBtn" class="btn btn-primary" title="Copy to clipboard">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy code
+        </button>
+        <button id="refreshBtn" class="btn btn-ghost-icon" aria-label="New code" title="New code">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </div>
+
+      <div id="copiedToast" class="toast hidden">Copied ✓</div>
     </div>
-  </div>
+
+    <div class="meta-row">
+      <span class="meta-text">Stored in <strong id="keychainName">keychain</strong> · code made by the native host</span>
+    </div>
+
+    <div class="danger-zone">
+      <button id="deleteBtn" class="btn btn-link-danger">Remove seed…</button>
+      <div id="confirmDelete" class="confirm hidden">
+        <span>Remove the seed from your keychain?</span>
+        <div class="confirm-btns">
+          <button id="confirmYesBtn" class="btn btn-danger">Remove</button>
+          <button id="confirmNoBtn" class="btn btn-ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <!-- Setup (no seed) -->
-  <div id="setupView" class="hidden">
-    <label for="seedInput">TOTP secret key (base32)</label>
-    <textarea id="seedInput" placeholder="JBSWY3DPEHPK3PXP" spellcheck="false" autocomplete="off"></textarea>
-    <div class="hint">Stored in your <span id="keychainName">keychain</span>. Never leaves your device.</div>
-    <button id="saveBtn" class="btn-primary" disabled>Save</button>
-  </div>
+  <main id="setupView" class="hidden">
+    <div class="setup-card">
+      <p class="setup-intro">Paste the <strong>TOTP secret</strong> from TU Wien (setup shows a base32 key when you enable MFA).</p>
+      <textarea id="seedInput" rows="3" placeholder="e.g. JBSWY3DPEHPK3PXP" spellcheck="false" autocomplete="off"></textarea>
+      <div id="seedFeedback" class="feedback"></div>
+      <button id="saveBtn" class="btn btn-primary btn-wide" disabled>Save to keychain</button>
+
+      <ul class="security-list">
+        <li>Seed lives only in your <span id="keychainNameSetup">keychain</span></li>
+        <li>Codes are generated by the native host — <strong>Firefox never sees the seed</strong></li>
+        <li>Nothing ever leaves your device</li>
+      </ul>
+    </div>
+  </main>
 
   <p class="footer">
     Not an official TU Wien tool. AutoFactorAuthenticator — provided AS IS. You are responsible for any damages.
