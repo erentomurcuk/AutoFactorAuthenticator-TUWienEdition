@@ -23,7 +23,7 @@ param(
   [switch]$SkipDeps,
   [switch]$Arm64,
   [string]$SourceDir,
-  [string]$RepoUrl = "https://github.com/erentomurcuk/TUWien-Auto-2FA.git",
+  [string]$RepoUrl = "https://github.com/erentomurcuk/AutoFactorAuthenticator-TUWienEdition.git",
   [string]$CloneDir = "$env:USERPROFILE\src\TUWien-Auto-2FA"
 )
 
