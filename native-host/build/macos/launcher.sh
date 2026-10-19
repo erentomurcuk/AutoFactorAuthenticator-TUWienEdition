@@ -6,9 +6,9 @@ set -euo pipefail
 
 RESOLVED="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 APP_BUNDLE="$(dirname "$(dirname "$(dirname "$RESOLVED")")")"
-BINARY_PATH="$APP_BUNDLE/Contents/MacOS/tuwien-2fa-native"
+BINARY_PATH="$APP_BUNDLE/Contents/MacOS/autotiss2fa-native"
 MANIFEST_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts"
-MANIFEST_FILE="$MANIFEST_DIR/com.tuwien.2fa.json"
+MANIFEST_FILE="$MANIFEST_DIR/com.autofactor.autotiss2fa.json"
 
 show_dialog() {
   osascript -e "display dialog \"$1\" buttons {\"$2\", \"$3\"} default button \"$3\" with icon $4"
@@ -22,11 +22,11 @@ install_manifest() {
   mkdir -p "$MANIFEST_DIR"
   cat > "$MANIFEST_FILE" << EOF
 {
-  "name": "com.tuwien.2fa",
-  "description": "Native host for TU Wien Auto 2FA",
+  "name": "com.autofactor.autotiss2fa",
+  "description": "Native host for AutoTISS2FA",
   "path": "$BINARY_PATH",
   "type": "stdio",
-  "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]
+  "allowed_extensions": ["autotiss2fa@autofactorauthenticator"]
 }
 EOF
 }

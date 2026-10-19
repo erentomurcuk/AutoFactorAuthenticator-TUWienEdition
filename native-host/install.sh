@@ -1,10 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
+# Builds the native messaging host and registers it with Firefox for the
+# current user. Windows support goes through Git Bash / MSYS the same way the
+# Windows launcher does: manifest path with forward slashes, plus an HKCU
+# registry entry (Firefox on Windows finds the manifest via the registry, not
+# the directory).
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-EXTENSION_ID="tuwien-auto-2fa@aGreatTUWienStudent"
-HOST_NAME="com.tuwien.2fa"
-BINARY_NAME="tuwien-2fa-native"
+EXTENSION_ID="autotiss2fa@autofactorauthenticator"
+HOST_NAME="com.autofactor.autotiss2fa"
+BINARY_NAME="autotiss2fa-native"
 
 detect_os() {
   case "$(uname -s)" in
@@ -21,6 +27,26 @@ get_manifest_dir() {
     linux)  echo "$HOME/.mozilla/native-messaging-hosts" ;;
     windows) echo "$HOME/AppData/Local/Mozilla/NativeMessagingHosts" ;;
   esac
+}
+
+require_cargo() {
+  if ! command -v cargo >/dev/null 2>&1; then
+    echo "Error: cargo not found. Install the Rust toolchain first:"
+    echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+    exit 1
+  fi
+}
+
+# MSYS/Cygwin build paths are "/c/Users/...", Firefox on Windows needs a
+# Windows-style path. Forward slashes are valid JSON and accepted by
+# CreateProcess; backslashes in the JSON would need \\ escaping.
+to_windows_path() {
+  local p="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -m "$p"
+  else
+    echo "$p"
+  fi
 }
 
 build_macos_universal() {
@@ -57,7 +83,7 @@ install_manifest() {
   cat > "$manifest_dir/$HOST_NAME.json" << EOF
 {
   "name": "$HOST_NAME",
-  "description": "Native host for TU Wien Auto 2FA - stores TOTP seed in OS keychain",
+  "description": "Native host for AutoTISS2FA - stores TOTP seed in OS keychain",
   "path": "$binary_path",
   "type": "stdio",
   "allowed_extensions": ["$EXTENSION_ID"]
@@ -66,8 +92,22 @@ EOF
   echo "  Installed native manifest: $manifest_dir/$HOST_NAME.json"
 }
 
+register_windows() {
+  # Firefox on Windows resolves the manifest through the registry; the file
+  # location is ours to choose. Keep both steps in one place.
+  local manifest_file="$1"
+  if command -v reg >/dev/null 2>&1; then
+    reg add "HKCU\\Software\\Mozilla\\NativeMessagingHosts\\$HOST_NAME" /ve /d "$manifest_file" /f >/dev/null
+    echo "  Registered manifest path in the registry (HKCU)."
+  else
+    echo "  Warning: reg.exe not found; run this from Git Bash / MSYS so the"
+    echo "  registry key can be written, or the manifest will have no"
+    echo "  registration and Firefox will not find the host."
+  fi
+}
+
 main() {
-  echo "=== TU Wien Auto 2FA - Native Host Installer ==="
+  echo "=== AutoTISS2FA — native host installer (AutoFactorAuthenticator) ==="
   local os
   os=$(detect_os)
   echo "Detected OS: $os"
@@ -76,25 +116,42 @@ main() {
     exit 1
   fi
   cd "$SCRIPT_DIR"
+  require_cargo
   if [ "$os" = "macos" ]; then
     build_macos_universal
   else
     build_native "$os"
   fi
+
+  case "$os" in
+    windows)
+      BINARY_PATH=$(to_windows_path "$BINARY_PATH")
+      ;;
+    *)
+      BINARY_PATH=$(cd "$(dirname "$BINARY_PATH")" && pwd)/$(basename "$BINARY_PATH")
+      ;;
+  esac
+
   local manifest_dir
   manifest_dir=$(get_manifest_dir "$os")
   install_manifest "$manifest_dir" "$BINARY_PATH"
+
+  case "$os" in
+    windows)
+      register_windows "$manifest_dir/$HOST_NAME.json"
+      ;;
+  esac
+
   echo ""
   echo "=== Installation complete ==="
   echo ""
   echo "Next steps:"
   echo "  1. Restart Firefox if it was running"
-  echo "  2. Go to about:debugging#/runtime/this-firefox"
-  echo "  3. Load the extension from: $SCRIPT_DIR/../extension"
-  echo "  4. Click the extension icon and paste your TOTP seed"
+  echo "  2. Install the extension (.xpi from releases, or load extension/ via about:debugging)"
+  echo "  3. Click the extension icon and paste your TOTP seed"
   echo ""
   echo "Or use web-ext for development:"
-  echo "  npm run dev    # from the project root"
+  echo "  pnpm run dev    # from the project root"
 }
 
 main

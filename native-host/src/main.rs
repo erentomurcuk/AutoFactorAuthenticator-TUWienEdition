@@ -4,7 +4,11 @@ use std::process;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 
-const SERVICE: &str = "TU Wien Auto 2FA";
+// Variant identity: this keyring service belongs to the AutoTISS2FA build of
+// AutoFactorAuthenticator. OLD_SERVICE is kept so --delete-credential also
+// cleans up seeds stored by the pre-rename build ("TU Wien Auto 2FA").
+const SERVICE: &str = "AutoTISS2FA";
+const OLD_SERVICE: &str = "TU Wien Auto 2FA";
 const SEED_KEY: &str = "totp_seed";
 const MAX_MESSAGE_SIZE: usize = 4_194_304;
 const MAX_SEED_SIZE: usize = 256;
@@ -26,18 +30,19 @@ struct Response {
 }
 
 fn validate_and_clean_seed(s: &str) -> Result<String, String> {
-    let cleaned: String = s.chars().filter(|c| !c.is_whitespace() && *c != '-').collect();
+    // Whitespace, dashes and padding are presentation; the stored value is
+    // canonical uppercase base32 without them. (Before 1.2 the '=' survived
+    // validation and got stored inside the keyring entry - harmless only
+    // because the JS still stripped '=' at read time.)
+    let cleaned: String = s
+        .chars()
+        .filter(|c| !c.is_whitespace() && *c != '-' && *c != '=')
+        .collect();
     let upper = cleaned.to_uppercase();
     if upper.len() < MIN_SEED_SIZE || upper.len() > MAX_SEED_SIZE {
         return Err(format!("Seed length {} is out of range ({}-{})", upper.len(), MIN_SEED_SIZE, MAX_SEED_SIZE));
     }
     for (i, c) in upper.char_indices() {
-        if c == '=' {
-            if i < upper.len() - 6 {
-                return Err(format!("padding '=' at position {}", i + 1));
-            }
-            continue;
-        }
         if !matches!(c, 'A'..='Z' | '2'..='7') {
             return Err(format!("invalid character at position {}: '{}' (code {})", i + 1, c, c as u32));
         }
@@ -96,25 +101,33 @@ fn unknown_command(_cmd: &str) -> Response {
 }
 
 fn delete_stored_seed() -> io::Result<()> {
-    match keyring::Entry::new(SERVICE, SEED_KEY) {
-        Ok(entry) => {
-            match entry.delete_credential() {
-                Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-                Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
+    // Remove the current service name, and the pre-rename one as well, so an
+    // upgrade can never leave the old seed orphaned in the keychain.
+    for service in [SERVICE, OLD_SERVICE] {
+        match keyring::Entry::new(service, SEED_KEY) {
+            Ok(entry) => {
+                match entry.delete_credential() {
+                    Ok(()) | Err(keyring::Error::NoEntry) => {}
+                    Err(e) => {
+                        return Err(io::Error::new(io::ErrorKind::Other, e));
+                    }
+                }
             }
+            Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e)),
         }
-        Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
     }
+    Ok(())
 }
 
 fn print_help() {
-    eprintln!("TU Wien Auto 2FA native host");
+    eprintln!("AutoTISS2FA native host (AutoFactorAuthenticator)");
     eprintln!("");
     eprintln!("When launched by Firefox with no arguments, this binary speaks the");
     eprintln!("Native Messaging protocol on stdin/stdout.");
     eprintln!("");
     eprintln!("Options:");
     eprintln!("  --delete-credential  Remove the stored TOTP seed from the OS keychain");
+    eprintln!("  --version            Show the version and exit");
     eprintln!("  --help               Show this help message");
 }
 
@@ -130,6 +143,10 @@ fn main() -> io::Result<()> {
                     process::exit(1);
                 }
                 println!("Removed stored TOTP seed from keychain.");
+                return Ok(());
+            }
+            "--version" | "-V" => {
+                println!("autotiss2fa-native {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
             }
             "--help" | "-h" => {

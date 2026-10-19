@@ -1,9 +1,17 @@
-Package: tuwien-auto-2fa
-Version: 1.1.0
+Package: autotiss2fa
+Version: 1.2.0
 Architecture: amd64
-Maintainer: TU Wien Auto 2FA
+Maintainer: Eren Tomurcuk <erentomurcuk@users.noreply.github.com>
 Description: Firefox extension for automatic TU Wien 2FA
- Auto-fills TOTP codes for TU Wien login.
- The TOTP seed is stored in the system keyring.
- This is NOT an official tool by TU Wien.
-Depends: libsecret-1-0
+AutoFactorAuthenticator / AutoTISS2FA - Auto-fills TOTP codes for TU Wien login.
+The TOTP seed is stored in the system keyring (Secret Service).
+This is NOT an official tool by TU Wien.
+Depends: libdbus-1-3
+Recommends: zenity | kdialog
+
+# Dependency note (fixed in 1.2): the host links libdbus-1.so.3 and nothing
+# else (readelf on the shipped binary). The old "Depends: libsecret-1-0" was
+# fictional - libsecret was never linked, and a system WITH libsecret but
+# WITHOUT dbus was still left broken. Run-time keyring access needs a Secret
+# Service provider (GNOME Keyring, KDE Wallet or KeepassXC's Secret Service
+# plugin); the launcher deps guarantee a GUI dialog tool exists.

@@ -1,80 +1,83 @@
 #!/bin/bash
-# Build the Windows EXE installer using Inno Setup.
-# Builds a single installer for x64 and ARM64.
-# This script is intended to run on Windows with Inno Setup installed.
-
+# Git Bash / MSYS twin of build-exe.ps1: builds the AutoTISS2FA Windows
+# installer with Inno Setup 6.3+ (inno-setup.iss uses IsARM64 and the boolean
+# "x64compatible arm64" architecture list, so 6.3 or newer is required).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Find x64 binary
-X64_BINARY=""
-for path in \
-  "$NATIVE_HOST_DIR/target/x86_64-pc-windows-msvc/release/tuwien-2fa-native.exe" \
-  "$NATIVE_HOST_DIR/target/x86_64-pc-windows-gnu/release/tuwien-2fa-native.exe" \
-  "$NATIVE_HOST_DIR/target/release/tuwien-2fa-native.exe"; do
-  if [ -f "$path" ]; then
-    X64_BINARY="$path"
+BINARY_NAME="autotiss2fa-native.exe"
+STAGED_X64="$SCRIPT_DIR/autotiss2fa-native-x64.exe"
+STAGED_ARM64="$SCRIPT_DIR/autotiss2fa-native-arm64.exe"
+
+# Clean stale staged binaries from an earlier run first - otherwise a binary
+# that was since deleted can be shipped by accident.
+rm -f "$STAGED_X64" "$STAGED_ARM64"
+
+for p in \
+  "$NATIVE_HOST_DIR/target/x86_64-pc-windows-msvc/release/$BINARY_NAME" \
+  "$NATIVE_HOST_DIR/target/x86_64-pc-windows-gnu/release/$BINARY_NAME" \
+  "$NATIVE_HOST_DIR/target/release/$BINARY_NAME"; do
+  if [ -f "$p" ]; then
+    X64_BIN="$p"
     break
   fi
 done
-
-if [ -z "$X64_BINARY" ]; then
-  echo "Error: x64 binary not found. Build with one of:" >&2
+if [ -z "${X64_BIN:-}" ]; then
+  echo "Error: x64 binary not found. Build one of:" >&2
   echo "  cargo xwin build --release --target x86_64-pc-windows-msvc" >&2
   echo "  cargo build --release --target x86_64-pc-windows-gnu" >&2
-  echo "  cargo build --release (native x64 Windows only)" >&2
+  echo "  cargo build --release" >&2
   exit 1
 fi
 
-# Find ARM64 binary (optional)
-ARM64_BINARY=""
-ARM64_PATH="$NATIVE_HOST_DIR/target/aarch64-pc-windows-msvc/release/tuwien-2fa-native.exe"
-if [ -f "$ARM64_PATH" ]; then
-  ARM64_BINARY="$ARM64_PATH"
-fi
-
-# Stage files
-cp "$X64_BINARY" "$SCRIPT_DIR/tuwien-2fa-native-x64.exe"
-if [ -n "$ARM64_BINARY" ]; then
-  cp "$ARM64_BINARY" "$SCRIPT_DIR/tuwien-2fa-native-arm64.exe"
-  echo "ARM64 binary found -- building dual-architecture installer."
+ARM64_BIN="$NATIVE_HOST_DIR/target/aarch64-pc-windows-msvc/release/$BINARY_NAME"
+if [ -f "$ARM64_BIN" ]; then
+  cp "$ARM64_BIN" "$STAGED_ARM64"
+  echo "ARM64 binary found: $ARM64_BIN"
 else
-  echo "ARM64 binary not found -- building x64-only installer."
+  echo "Warning: ARM64 binary not found, skipping (installer will support x64 only)"
 fi
 
-cat > "$SCRIPT_DIR/README.txt" <<'EOF'
-TU Wien Auto 2FA
-================
+cp "$X64_BIN" "$STAGED_X64"
 
-This is NOT an official tool by TU Wien. It is a self-made project
-provided AS IS. You are responsible for any possible damages or problems.
+cat > "$SCRIPT_DIR/README.txt" << 'EOF'
+AutoTISS2FA - native messaging host for Firefox
+===============================================
 
-Installation
-------------
-1. Run the installer.
-2. After installation, the launcher will open automatically.
-3. Click "Y" to register with Firefox.
-4. Click the extension icon in Firefox and paste your TOTP secret key.
+This is NOT an official tool by TU Wien. Provided AS IS.
+You are responsible for whatever happens when you use it.
 
-Uninstallation
---------------
-Use Windows Settings > Apps > TU Wien Auto 2FA > Uninstall.
-Your TOTP seed will be removed from Windows Credential Manager.
+The installer registers the native messaging host with Firefox and starts the
+configuration console. Then:
+
+  1. Install the .xpi extension in Firefox (about:addons > Install Add-on
+     From File or search for it on the Builds channel).
+  2. Click the extension icon and paste your TOTP secret.
+
+Your TOTP seed is stored in Windows Credential Manager and never leaves this
+computer.
+
+Uninstall: Settings > Apps > AutoTISS2FA > Uninstall.
 EOF
 
-# Compile with Inno Setup
-if command -v iscc >/dev/null 2>&1; then
-  iscc "$SCRIPT_DIR/inno-setup.iss"
-elif [ -x "/c/Program Files (x86)/Inno Setup 6/iscc.exe" ]; then
-  "/c/Program Files (x86)/Inno Setup 6/iscc.exe" "$SCRIPT_DIR/inno-setup.iss"
-elif [ -x "/c/Program Files/Inno Setup 6/iscc.exe" ]; then
-  "/c/Program Files/Inno Setup 6/iscc.exe" "$SCRIPT_DIR/inno-setup.iss"
-else
+ISCC=""
+for c in \
+  "$(command -v iscc 2>/dev/null || true)" \
+  "/c/Program Files (x86)/Inno Setup 6/iscc.exe" \
+  "/c/Program Files/Inno Setup 6/iscc.exe"; do
+  if [ -n "$c" ] && [ -e "$c" ]; then
+    ISCC="$c"
+    break
+  fi
+done
+if [ -z "$ISCC" ]; then
   echo "Error: Inno Setup compiler (iscc) not found." >&2
-  echo "Install Inno Setup 6 from https://jrsoftware.org/isdl.php" >&2
+  echo "Install Inno Setup 6.3+ from https://jrsoftware.org/isdl.php" >&2
   exit 1
 fi
 
-echo "Created: $SCRIPT_DIR/TUWien-Auto-2FA-Setup.exe"
+"$ISCC" "$SCRIPT_DIR/inno-setup.iss"
+
+echo "Created: $SCRIPT_DIR/AutoTISS2FA-Setup.exe"

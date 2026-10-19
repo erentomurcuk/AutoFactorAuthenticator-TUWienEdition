@@ -17,7 +17,7 @@ mkdir -p "$ICONSET"
 render_svg() {
   local size="$1"
   local output="$2"
-  
+
   # 1. qlmanage (macOS QuickLook)
   if command -v qlmanage >/dev/null 2>&1; then
     qlmanage -t -s "$size" -o "$WORKDIR" "$INPUT_SVG" >/dev/null 2>&1 || true
@@ -26,7 +26,7 @@ render_svg() {
       sips -z "$size" "$size" "$preview" --out "$output" >/dev/null 2>&1 && return 0
     fi
   fi
-  
+
   # 2. sips direct (macOS sometimes handles SVG)
   sips -z "$size" "$size" "$INPUT_SVG" --out "$output" >/dev/null 2>&1 && return 0
 
@@ -52,17 +52,20 @@ except Exception as e:
     sys.exit(1)
 " 2>/dev/null && return 0
   fi
-  
+
   echo "Error: could not render SVG to PNG (size $size)" >&2
   return 1
 }
 
-SIZES=(16 32 64 128 256 512)
-for size in "${SIZES[@]}"; do
+# Apple's canonical iconset layout. Every base size N gets a real 2N render as
+# the @2x variant — in V1.1 the @2x slots were same-size copies (cp of the N
+# render), which shipped every Retina icon mis-sized. 1024 px is needed only
+# as the 512@2x; it is never listed on its own.
+BASE_SIZES=(16 32 128 256 512)
+for size in "${BASE_SIZES[@]}"; do
+  d2=$((size * 2))
   render_svg "$size" "$ICONSET/icon_${size}x${size}.png"
-  if [ "$size" -lt 512 ]; then
-    cp "$ICONSET/icon_${size}x${size}.png" "$ICONSET/icon_${size}x${size}@2x.png"
-  fi
+  render_svg "$d2" "$ICONSET/icon_${size}x${size}@2x.png"
 done
 
 iconutil -c icns "$ICONSET" -o "$OUTPUT_ICNS"

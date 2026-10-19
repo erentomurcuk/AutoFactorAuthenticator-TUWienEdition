@@ -1,48 +1,54 @@
 [Setup]
-AppName=TU Wien Auto 2FA
-AppVersion=1.1.0
-AppPublisher=TU Wien Auto 2FA
+AppName=AutoTISS2FA
+AppVersion=1.2.0
+AppPublisher=AutoFactorAuthenticator
 AppComments=This is NOT an official tool by TU Wien. Provided AS IS.
-DefaultDirName={pf64}\TU Wien 2FA
-DefaultGroupName=TU Wien Auto 2FA
-UninstallDisplayIcon={app}\tuwien-2fa-native.exe
-OutputBaseFilename=TUWien-Auto-2FA-Setup
+DefaultDirName={pf64}\AutoTISS2FA
+DefaultGroupName=AutoTISS2FA
+UninstallDisplayIcon={app}\autotiss2fa-native.exe
+OutputBaseFilename=AutoTISS2FA-Setup
 Compression=lzma2
 SolidCompression=yes
-ArchitecturesAllowed=x64 arm64
-ArchitecturesInstallIn64BitMode=x64 arm64
+; NOTE: 'x64 arm64' boolean lists and the IsARM64 support function require
+; Inno Setup 6.3 or newer (2024). 6.0-6.2 will fail to compile this script.
+; 'x64compatible' replaces the now-deprecated 'x64' identifier.
+ArchitecturesAllowed=x64compatible arm64
+ArchitecturesInstallIn64BitMode=x64compatible arm64
 WizardStyle=modern
 
 [Files]
 ; x64 binary (default)
-Source: "tuwien-2fa-native-x64.exe"; DestDir: "{app}"; DestName: "tuwien-2fa-native.exe"; Check: not IsARM64; Flags: ignoreversion
+Source: "autotiss2fa-native-x64.exe"; DestDir: "{app}"; DestName: "autotiss2fa-native.exe"; Check: not IsARM64; Flags: ignoreversion
 ; ARM64 binary
-Source: "tuwien-2fa-native-arm64.exe"; DestDir: "{app}"; DestName: "tuwien-2fa-native.exe"; Check: IsARM64; Flags: ignoreversion
+Source: "autotiss2fa-native-arm64.exe"; DestDir: "{app}"; DestName: "autotiss2fa-native.exe"; Check: IsARM64; Flags: ignoreversion
 Source: "launcher.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\TU Wien Auto 2FA"; Filename: "{app}\launcher.bat"
-Name: "{group}\Uninstall TU Wien Auto 2FA"; Filename: "{uninstallexe}"
+Name: "{group}\AutoTISS2FA"; Filename: "{app}\launcher.bat"
+Name: "{group}\Uninstall AutoTISS2FA"; Filename: "{uninstallexe}"
 
 [Registry]
 ; Firefox reads the *default* value of this key as a path to the native
 ; messaging manifest JSON file (not the binary). The manifest is written by
 ; the [Code] step below and additionally by the launcher on manual runs.
-Root: HKCU; Subkey: "Software\Mozilla\NativeMessagingHosts\com.tuwien.2fa"; ValueType: string; ValueData: "{app}\com.tuwien.2fa.json"; Flags: uninsdeletekey
+; HKCU works for a per-user Firefox regardless of installer elevation.
+Root: HKCU; Subkey: "Software\Mozilla\NativeMessagingHosts\com.autofactor.autotiss2fa"; ValueType: string; ValueData: "{app}\com.autofactor.autotiss2fa.json"; Flags: uninsdeletekey
 
 [Run]
-Filename: "{app}\launcher.bat"; Description: "Configure TU Wien 2FA"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\launcher.bat"; Description: "Configure AutoTISS2FA"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
-Filename: "{app}\tuwien-2fa-native.exe"; Parameters: "--delete-credential"; Flags: runhidden
+Filename: "{app}\autotiss2fa-native.exe"; Parameters: "--delete-credential"; Flags: runhidden
 
 [Code]
-function GetAppPath(Param: String): String;
-begin
-  Result := ExpandConstant('{app}');
-end;
-
+// THE WINDOWS BUG FIXED IN 1.2: the manifest JSON used to be written with the
+// path inline ("path": "C:\Program Files\AutoTISS2FA\autotiss2fa-native.exe").
+// A single backslash before a letter is an INVALID JSON escape (\P, \T are
+// undefined, \t is a tab), so Firefox failed to parse the file and the
+// extension could never see the host - "the app is installed but the
+// extension does not find it". JSON paths therefore always use FORWARD
+// slashes; Windows APIs accept them and JSON needs no escaping.
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ManifestPath, AppDir, BinaryPath, ManifestContent: String;
@@ -50,16 +56,18 @@ begin
   if CurStep = ssPostInstall then
   begin
     AppDir := ExpandConstant('{app}');
-    BinaryPath := AppDir + '\tuwien-2fa-native.exe';
-    ManifestPath := AppDir + '\com.tuwien.2fa.json';
+    // Forward slashes: JSON-legal, accepted by CreateProcess on Windows.
+    BinaryPath := AppDir + '/autotiss2fa-native.exe';
+    ManifestPath := AppDir + '\com.autofactor.autotiss2fa.json';
     ManifestContent :=
       '{' + #13#10 +
-      '  "name": "com.tuwien.2fa",' + #13#10 +
-      '  "description": "Native host for TU Wien Auto 2FA",' + #13#10 +
+      '  "name": "com.autofactor.autotiss2fa",' + #13#10 +
+      '  "description": "Native host for AutoTISS2FA",' + #13#10 +
       '  "path": "' + BinaryPath + '",' + #13#10 +
       '  "type": "stdio",' + #13#10 +
-      '  "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]' + #13#10 +
+      '  "allowed_extensions": ["autotiss2fa@autofactorauthenticator"]' + #13#10 +
       '}';
     SaveStringToFile(ManifestPath, ManifestContent, False);
   end;
 end;
+

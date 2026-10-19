@@ -1,9 +1,0 @@
-Package: tuwien-auto-2fa
-Version: 1.0.3
-Architecture: amd64
-Maintainer: TU Wien Auto 2FA
-Description: Firefox extension for automatic TU Wien 2FA
- Auto-fills TOTP codes for TU Wien login.
- The TOTP seed is stored in the system keyring.
- This is NOT an official tool by TU Wien.
-Depends: libsecret-1-0

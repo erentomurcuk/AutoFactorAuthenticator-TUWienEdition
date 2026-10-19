@@ -35,20 +35,20 @@ function linuxKeyringHint() {
   return "Install gnome-keyring, kwallet, or enable KeePassXC Secret Service plugin, then restart Firefox.";
 }
 
+// Must agree with the native host's validate_and_clean_seed: whitespace,
+// dashes and '=' padding are allowed at read time; the stored value is the
+// cleaned uppercase alphabet. '0','1','8','9' are NOT in base32.
 function validateBase32(str) {
-  const cleaned = str.replace(/[\s-]/g, "");
+  const cleaned = str.replace(/[\s=-]/g, "");
   if (cleaned.length === 0) return { valid: false, reason: "empty" };
-  const validChars = /^[A-Z2-7]+=*$/i;
-  if (!validChars.test(cleaned)) {
-    for (let i = 0; i < cleaned.length; i++) {
-      const c = cleaned[i];
-      if (!/^[A-Z2-7=]$/i.test(c)) {
-        return { valid: false, reason: `invalid character at position ${i + 1}: '${c}'` };
-      }
-      if (c === '=' && i < cleaned.length - 6) {
-        return { valid: false, reason: `padding '=' at position ${i + 1} before end` };
-      }
+  for (let i = 0; i < cleaned.length; i++) {
+    const c = cleaned[i];
+    if (!/^[A-Z2-7]$/i.test(c)) {
+      return { valid: false, reason: `invalid character at position ${i + 1}: '${c}' (0, 1, 8, 9 are not base32)` };
     }
+  }
+  if (cleaned.length < 16 || cleaned.length > 256) {
+    return { valid: false, reason: `length ${cleaned.length} is out of range (16-256)` };
   }
   return { valid: true };
 }
@@ -58,6 +58,9 @@ function validateBase32(str) {
 async function fetchTOTP() {
   try {
     const result = await browser.runtime.sendMessage({ type: "request_totp" });
+    if (!result || typeof result.code !== "string" || result.code.length === 0) {
+      throw new Error("bad response from native host");
+    }
     currentCode = result.code;
     totpCodeEl.textContent = currentCode;
     setStatus("Keychain: configured", "ok");
@@ -78,17 +81,22 @@ function startCountdown(seconds) {
   const total = Math.max(1, seconds);
   let remaining = total;
 
+  let retryPending = false;
   async function tick() {
     remaining = Math.max(0, remaining - 1);
     timerBar.style.width = (remaining / total) * 100 + "%";
     timerText.textContent = remaining + "s";
-    if (remaining <= 0) {
+    if (remaining <= 0 && !retryPending) {
       clearInterval(countdownInterval);
       countdownInterval = null;
       // Retry on failure with a short backoff instead of silently dying.
+      // retryPending keeps a failed tick and the user clicking Refresh from
+      // stacking two parallel fetch calls.
+      retryPending = true;
       const ok = await fetchTOTP();
+      retryPending = false;
       if (!ok) {
-        setTimeout(fetchTOTP, 5000);
+        setTimeout(() => { if (!countdownInterval) fetchTOTP(); }, 5000);
       }
     }
   }
@@ -232,8 +240,13 @@ async function init() {
     }
   } catch (e) {
     console.error("Native host error:", e);
-    const msg = currentOS === "linux" ? linuxKeyringHint() : "Native host not responding: " + e.message;
+    const msg = currentOS === "linux" ? linuxKeyringHint() : "Native host not responding: " + (e.message || "unknown");
     setStatus(msg, "error");
+    // The host must be reachable to save a seed, so leave the setup view up
+    // (with the save button disabled) instead of a menu-less error box.
+    showSetup();
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Save";
   }
 }
 

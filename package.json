@@ -1,12 +1,15 @@
 {
-  "name": "tuwien-auto-2fa",
-  "version": "1.1.0",
+  "name": "autotiss2fa",
+  "version": "1.2.0",
+  "description": "AutoTISS2FA — AutoFactorAuthenticator variant for the TU Wien login. Firefox extension + native messaging host.",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "web-ext run --source-dir extension",
     "build": "web-ext build --source-dir extension --overwrite-dest",
     "lint": "web-ext lint --source-dir extension",
-    "install-host": "cd native-host && bash install.sh"
+    "install-host": "cd native-host && bash install.sh",
+    "uninstall-host": "cd native-host && bash uninstall.sh"
   },
   "devDependencies": {
     "web-ext": "10.5.0"

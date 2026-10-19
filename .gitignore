@@ -1,43 +1,41 @@
+# tooling
 node_modules/
-web-ext-artifacts/
-native-host/target/
 .opencode/
 .vscode/
+*.swp
+*.swo
+.DS_Store
 
-node_modules
-package.json
-package-lock.json
-pnpm-lock.yaml
-bun.lock
+# web-ext build & upload state
+web-ext-artifacts/
+extension/.amo-upload-uuid
+*.xpi
 
-# Installer build outputs
+# rust
+native-host/target/
+
+# installer build outputs (per-line so tracked sources stay ignored-proof)
 *.dmg
 *.msi
 *.exe
 *.deb
 *.rpm
 *.AppImage
-native-host/build/*/AppDir/
-native-host/build/*/*.icns
-native-host/build/*/*.ico
-native-host/build/*/*.png
-native-host/build/*/tuwien-2fa-native*
-native-host/build/*/*.xpi
-native-host/build/*/*.txt
-native-host/build/*/com.tuwien.2fa.json
-native-host/build/macos/TU Wien 2FA.app/
-native-host/build/linux/rpmbuild/
 native-host/build/linux/linuxdeploy*.AppImage
-# deb build staging tree (any version)
-native-host/build/linux/tuwien-auto-2fa_*/
-# AMO upload markers
-extension/.amo-upload-uuid
-*.xpi
+native-host/build/linux/appimagetool*.AppImage
+native-host/build/linux/rpmbuild/
+native-host/build/linux/autotiss2fa_*/
+native-host/build/linux/AppDir/
+native-host/build/linux/appimage/*.png
+native-host/build/macos/TU Wien 2FA.app/
+native-host/build/macos/AutoTISS2FA.app/
+native-host/build/macos/icon.icns
+native-host/build/macos/autotiss2fa-native
+native-host/build/macos/*.icns
+native-host/build/windows/autotiss2fa-native-x64.exe
+native-host/build/windows/autotiss2fa-native-arm64.exe
+native-host/build/windows/README.txt
+native-host/build/windows/com.autofactor.autotiss2fa.json
 
-*.swp
-*.swo
-.DS_Store
-
-# Release artifacts
+# release artifacts
 releases/
-*.xpi

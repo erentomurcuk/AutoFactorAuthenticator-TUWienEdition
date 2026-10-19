@@ -8,7 +8,7 @@
 # launcher (launcher.sh) writes the manifest for their own $HOME.
 set -e
 
-echo "TU Wien Auto 2FA installed."
+echo "AutoTISS2FA installed."
 echo "Launch 'TU Wien 2FA' from your application menu to register it with Firefox."
 
 exit 0

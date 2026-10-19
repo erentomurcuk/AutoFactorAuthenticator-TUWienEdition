@@ -6,9 +6,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_ROOT="$(cd "$NATIVE_HOST_DIR/.." && pwd)"
-APP_NAME="TU Wien 2FA.app"
+APP_NAME="AutoTISS2FA.app"
 APP_BUNDLE="$SCRIPT_DIR/$APP_NAME"
-BINARY_NAME="tuwien-2fa-native"
+BINARY_NAME="autotiss2fa-native"
 
 echo "Building universal binary..."
 cd "$NATIVE_HOST_DIR"
@@ -29,11 +29,15 @@ cp "$SCRIPT_DIR/$BINARY_NAME" "$APP_BUNDLE/Contents/MacOS/"
 cp "$SCRIPT_DIR/launcher.sh" "$APP_BUNDLE/Contents/MacOS/"
 chmod 755 "$APP_BUNDLE/Contents/MacOS/launcher.sh"
 
-# Generate ICNS from project SVG icon
+# Generate ICNS from project SVG icon. Icon failure must not fail the whole
+# bundle - an iconless app still installs and runs.
 if [ -f "$PROJECT_ROOT/extension/icons/icon.svg" ]; then
   echo "Generating app icon..."
-  "$SCRIPT_DIR/svg-to-icns.sh" "$PROJECT_ROOT/extension/icons/icon.svg" "$SCRIPT_DIR/icon.icns"
-  cp "$SCRIPT_DIR/icon.icns" "$APP_BUNDLE/Contents/Resources/"
+  if ! "$SCRIPT_DIR/svg-to-icns.sh" "$PROJECT_ROOT/extension/icons/icon.svg" "$SCRIPT_DIR/icon.icns"; then
+    echo "Warning: icon generation failed - building without an app icon"
+  else
+    cp "$SCRIPT_DIR/icon.icns" "$APP_BUNDLE/Contents/Resources/"
+  fi
 fi
 
 # Ad-hoc sign the app

@@ -1,17 +1,21 @@
-# TU Wien Auto 2FA
+# AutoTISS2FA
 
-A Firefox extension that auto-fills the 2FA code when you log into TU Wien.
+**AutoFactorAuthenticator — TU Wien variant.**
 
-> **Disclaimer:** This is *not* an official TU Wien tool. It's a side project, provided AS IS. You're responsible for whatever happens when you use it.
+A Firefox extension that auto-fills the 2FA code on the TU Wien login
+(`idp.zid.tuwien.ac.at`). This variant is deliberately TU Wien-only; a separate
+fork handles arbitrary websites.
 
-Your TOTP secret never leaves your machine. It's stored in your OS keychain (Apple Keychain, KDE Wallet, GNOME Keyring, or Windows Credential Manager) via a tiny Rust native messaging host.
+> **Disclaimer:** This is *not* an official TU Wien tool, and it has *not* been
+> security-audited. It is provided AS IS (see `LICENSE`). You are responsible
+> for whatever happens when you use it.
 
 ## How it works
 
 ```
 TU Wien login page (idp.zid.tuwien.ac.at)
         │
-        ▼  spots the #totp field
+        ▼  spots the TOTP field (#totp, with fallbacks)
 Content Script
         │
         ▼  asks for a TOTP code
@@ -27,272 +31,196 @@ Background Script
 Content Script  ←  you still hit submit yourself
 ```
 
+Key properties:
+
+- Your TOTP seed **never leaves your machine**. It is stored in your OS
+  keychain (Apple Keychain, Windows Credential Manager, or the Linux Secret
+  Service providers — GNOME Keyring, KDE Wallet, KeePassXC) via the Rust
+  native-messaging host.
+- Nothing is sent anywhere: no cloud, no telemetry, no network access at all.
+  The extension's `connect-src 'none'` CSP forbids even it from opening a
+  connection.
+- The keyring entry is namespaced per variant (`AutoTISS2FA`), so site-variant
+  forks can coexist on one machine. Upgrading from the pre-1.2 name
+  (`TU Wien Auto 2FA`) transparently cleans up the old entry.
+
 ## Requirements
 
-- Firefox 142 or newer
+- Firefox 142 or newer (or a Chromium-compatible fork of this project — not a
+  goal for this one).
+- **Linux**: a Secret Service keyring daemon (GNOME Keyring, KDE Wallet or
+  KeePassXC's Secret Service plugin) and `zenity` or `kdialog`.
 
-## Install (quick way)
+## Install
 
-Each installer includes the native host. You still need to install the `.xpi` in Firefox separately.
+Each installer includes the native host. You still need to install the `.xpi`
+in Firefox separately.
 
 ### macOS
 
-1. Grab `TUWien-Auto-2FA.dmg`.
-2. Open it and drag **TU Wien 2FA.app** into **Applications**.
-3. Launch the app, click **Install**.
-4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...**.
-5. Pick the signed `.xpi`.
-6. Click the extension icon and paste your TOTP secret.
+1. Grab `AutoTISS2FA.dmg` from the releases.
+2. Open it and drag **AutoTISS2FA.app** into **Applications**.
+3. First launch: right-click the app → **Open** (macOS Gatekeeper warns about
+   unsigned apps; a one-time Open confirms). Click **Install** in the dialog.
+4. In Firefox, `about:addons` → gear → **Install Add-on From File...** → pick
+   the signed `.xpi`.
+5. Click the extension icon and paste your TOTP secret.
 
 ### Windows
 
-1. Grab `TUWien-Auto-2FA-Setup.exe`.
-2. Run it (admin rights needed).
-3. The launcher pops up, press **Y** to register with Firefox.
-4. In Firefox, go to `about:addons`, click the gear → **Install Add-on From File...**.
-5. Pick the signed `.xpi`.
-6. Click the extension icon and paste your TOTP secret.
+1. Grab `AutoTISS2FA-Setup.exe` from the releases.
+2. Run it (admin rights needed) — the console asks to register the host, press
+   **Y**.
+3. In Firefox, `about:addons` → gear → **Install Add-on From File...** → pick
+   the signed `.xpi`.
+4. Click the extension icon and paste your TOTP secret.
+
+> **Note for 1.1 users:** Windows 1.1 installers wrote the native-messaging
+> manifest with raw backslashes inside the JSON `"path"` value, which is
+> invalid JSON, so Firefox could not load the host ("app installed but the
+> extension does not see it"). 1.2 fixes this. Reinstall the host and pasted
+> seeds are unaffected (same keychain entry name).
 
 ### Linux
 
 **Debian / Ubuntu**
+
 ```bash
-sudo dpkg -i tuwien-auto-2fa_1.1.0_amd64.deb
+sudo dpkg -i autotiss2fa_1.2.0_amd64.deb
 ```
 
 **Fedora / RHEL**
+
 ```bash
-sudo rpm -i tuwien-auto-2fa-1.1.0-1.x86_64.rpm
+sudo rpm -i autotiss2fa-1.2.0-1.x86_64.rpm
 ```
 
 **AppImage** (any distro)
+
 ```bash
-chmod +x TUWien-Auto-2FA-x86_64.AppImage
-./TUWien-Auto-2FA-x86_64.AppImage
+chmod +x AutoTISS2FA-x86_64.AppImage
+./AutoTISS2FA-x86_64.AppImage        # registers with Firefox on first run
 ```
 
-After installing, launch **TU Wien 2FA** from your app menu, click **Install**, then install the `.xpi` in Firefox via `about:addons` → gear → **Install Add-on From File...**.
+After installing, launch **AutoTISS2FA** from your app menu and click
+**Install**, then install the `.xpi` in Firefox.
 
 ## Build from source
 
-If you'd rather roll your own, or your platform doesn't have a pre-built package:
-
-### 1. Native messaging host (Rust)
-
-You need the Rust toolchain first:
+You need the Rust toolchain (and on Linux nothing beyond your distro's
+default dev base for the D-Bus linker):
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-On Linux you also need `libsecret` development headers:
-
-```bash
-# Debian/Ubuntu
-sudo apt install libsecret-1-dev
-# Fedora
-sudo dnf install libsecret-devel
-# Arch
-sudo pacman -S libsecret
-```
-
-Then build and register the native host:
+### 1. Native messaging host (Rust)
 
 ```bash
 cd native-host
-bash install.sh
+bash install.sh     # builds + registers with Firefox for the current user
 ```
 
-This builds the binary, copies the native messaging manifest into the right place so Firefox can find it. Restart Firefox if it was running.
+`install.sh` works on macOS (universal build), Linux, and Windows-from-Git-Bash.
+It refuses to run without cargo and prints the reason.
 
 ### 2. Firefox extension
 
 ```bash
 pnpm install
-pnpm run dev     # runs extension in a temporary Firefox profile
+pnpm run dev       # runs the extension in a temporary Firefox profile
 ```
 
-Or load it manually from `about:debugging#/runtime/this-firefox` → pick `extension/manifest.json`.
+Or load it manually: `about:debugging#/runtime/this-firefox` → **Load
+Temporary Add-on...** → pick `extension/manifest.json`.
 
 ### 3. Save your TOTP seed
 
-Click the extension icon in the toolbar, paste your base32 TOTP secret, hit **Save to Keychain**. Done.
+Click the extension icon in the toolbar, paste your base32 TOTP secret, hit
+**Save**. Done. (Whitespace, dashes and `=` padding are cleaned automatically.)
 
-## Build platform installers
-
-Want to make the DMG / EXE / DEB / RPM / AppImage yourself? Here's how.
-
-### Prerequisites
-
-**All platforms:**
-- Rust toolchain (see above)
-- `pnpm` (for the extension build)
-
-**macOS:**
-- Xcode Command Line Tools: `xcode-select --install`
-
-**Windows:**
-- Visual Studio Build Tools with the C++ workload + Rust Cargo
-- Inno Setup 6 from [jrsoftware.org](https://jrsoftware.org/isdl.php)
-- PowerShell (comes with Windows 10+)
-
-**Linux:**
-- `libsecret` headers (see above)
-- Debian/Ubuntu: `sudo apt install dpkg-dev`
-- Fedora/RHEL: `sudo dnf install rpm-build`
-- AppImage: `wget` (usually pre-installed)
-
-### Extension
+## Build your own installers
 
 ```bash
-pnpm install
-pnpm run build
+# macOS DMG
+cd native-host/build && bash build-packages.sh macos
+# → native-host/build/macos/AutoTISS2FA.dmg
+
+# Windows EXE (needs Inno Setup 6.3+, NOT 6.0-6.2: the .iss uses the
+# IsARM64 function and the boolean architecture list)
+cd native-host/build && bash build-packages.sh windows
+# → native-host/build/windows/AutoTISS2FA-Setup.exe   (x64 + ARM64 in one)
+
+# Linux packaging
+cd native-host/build && bash build-packages.sh linux
+# → autotiss2fa_1.2.0_amd64.deb, autotiss2fa-1.2.0-1.x86_64.rpm,
+#   AutoTISS2FA-x86_64.AppImage
 ```
 
-This drops an unsigned `.zip` in `web-ext-artifacts/`.
-For a signed `.xpi` (permanent install without developer warnings):
-
-```bash
-pnpm exec web-ext sign \
-  --source-dir extension \
-  --channel unlisted \
-  --api-key=YOUR_JWT_ISSUER \
-  --api-secret=YOUR_JWT_SECRET
-```
-
-Get API credentials at [addons.mozilla.org](https://addons.mozilla.org/en-US/developers/addon/api/key/).
-This is free and you can do it yourself, or just download mine from the releases.
-
-### macOS — DMG
-
-```bash
-cd native-host/build
-bash build-packages.sh macos
-```
-
-Or step by step:
-
-```bash
-# 1. Build a universal binary (x86_64 + arm64) and wrap it in a .app
-cd native-host/build/macos
-bash create-app-bundle.sh
-
-# 2. Turn the .app into a DMG
-bash create-dmg.sh
-```
-
-The DMG lands in `native-host/build/macos/TUWien-Auto-2FA.dmg`.
-
-### Windows — EXE installer (x64 + ARM64)
-
-The installer supports **both x64 and ARM64** in a single package.
-
-```powershell
-cd native-host\build\windows
-powershell -ExecutionPolicy Bypass -File build-exe.ps1
-```
-
-Under the hood this:
-1. Looks for `tuwien-2fa-native.exe` (x64) and optionally the ARM64 binary
-2. Copies each with an arch-specific name (`tuwien-2fa-native-x64.exe`, `tuwien-2fa-native-arm64.exe`)
-3. Inno Setup's `IsARM64` check installs the right one at runtime
-4. Outputs `TUWien-Auto-2FA-Setup.exe` in the same directory
-
-Cross-compile both from macOS/Linux:
+Windows cross-compile from macOS/Linux:
 
 ```bash
 cargo xwin build --release --target x86_64-pc-windows-msvc
 cargo xwin build --release --target aarch64-pc-windows-msvc
 ```
 
-Or build natively on Windows with the MSVC toolchain:
-
-```bash
-cargo build --release
-```
-
-### Linux — DEB, RPM, and AppImage
-
-**All three at once:**
-
-```bash
-cd native-host/build
-bash build-packages.sh linux
-```
-
-**Or one at a time:**
-
-```bash
-# First build the Linux binary
-cd native-host
-cargo build --release
-
-# DEB package
-cd build/linux
-bash build-deb.sh        # needs dpkg-deb
-
-# RPM package
-bash build-rpm.sh        # needs rpmbuild
-
-# AppImage
-bash build-appimage.sh   # downloads linuxdeploy automatically
-```
-
-Artifacts land in `native-host/build/linux/`:
-- `tuwien-auto-2fa_1.1.0_amd64.deb`
-- `tuwien-auto-2fa-1.1.0-1.x86_64.rpm`
-- `TUWien-Auto-2FA-x86_64.AppImage`
-
-## Usage
-
-Once set up, just visit `https://idp.zid.tuwien.ac.at/` and log in. When the 2FA field shows up, the extension fills the code automatically. You still click the submit button yourself.
-This app will NOT autofill other credentials.
-
 ## Uninstall
 
-- **macOS:** Open **TU Wien 2FA.app** from Applications and click **Uninstall**.
-- **Windows:** Go to **Settings > Apps > TU Wien Auto 2FA > Uninstall**.
-- **Linux deb/rpm:** `sudo dpkg -r tuwien-auto-2fa` or `sudo rpm -e tuwien-auto-2fa`.
-- **Linux AppImage:** `./TUWien-Auto-2FA-x86_64.AppImage --uninstall`.
+- **macOS:** open **AutoTISS2FA.app** → **Uninstall**.
+- **Windows:** *Settings → Apps → AutoTISS2FA → Uninstall* (or the Start-menu
+  entry → confirms → removes manifest, registry key, keychain seed).
+- **Linux deb/rpm:** `sudo dpkg -r autotiss2fa` / `sudo rpm -e autotiss2fa`
+  then run the installed app once and answer yes (drops the user's manifest +
+  keyring seed).
+- **Linux AppImage:** `./AutoTISS2FA-x86_64.AppImage --uninstall`.
 - **Source install:** `cd native-host && bash uninstall.sh`.
 
 ## Project structure
 
 ```
-TUWEL-Auto-2FA/
+AutoFactorAuthenticator/
 ├── extension/              # Firefox extension (plain JS, no bundler)
-│   ├── manifest.json       # MV3 manifest
+│   ├── manifest.json       # MV3 manifest (gecko id autotiss2fa@autofactorauthenticator)
 │   ├── background.js       # TOTP generation, talks to native host
-│   ├── content_script.js   # Detects #totp on the login page
-│   ├── popup/              # Popup UI
-│   │   ├── popup.html
-│   │   └── popup.js
-│   └── icons/
-├── native-host/            # Rust native messaging host
-│   ├── src/main.rs         # stdin/stdout JSON protocol + keyring access
+│   ├── content_script.js   # Finds the TOTP field on the login page
+│   └── popup/              # Popup UI (seed setup / code display)
+├── native-host/
+│   ├── src/main.rs         # stdio JSON protocol + keyring access
 │   ├── Cargo.toml
 │   ├── install.sh          # Build + register with Firefox
 │   ├── uninstall.sh
-│   ├── build/              # Installer builders per platform
-│   │   ├── macos/
-│   │   ├── windows/
-│   │   └── linux/
-│   └── scripts/
-└── package.json            # web-ext config
+│   └── build/              # Platform installer builders
+│       ├── macos/          # .app bundle + DMG
+│       ├── windows/        # Inno Setup EXE (x64 + ARM64)
+│       └── linux/          # DEB / RPM / AppImage
+└── package.json            # web-ext scripts (dev/build/lint/sign)
 ```
 
-## Security
+## Security model
 
 | Layer | How it works |
-|-------|-------------|
-| At rest | TOTP seed in OS keychain (Apple Keychain / libsecret / Credential Manager) |
-| In transit | Seed fetched via Native Messaging (stdin/stdout, only accessible to this extension) |
-| In memory | Seed used only during TOTP generation, never saved in extension storage |
-| Network | Nothing is sent anywhere. No cloud, no telemetry. |
+|-------|--------------|
+| At rest | TOTP seed in the OS keychain under service name `AutoTISS2FA` |
+| In transit | Native messaging over stdio, only to this extension id |
+| In memory | Seed cached in the background page never longer than ~31 s, cleared on the window boundary |
+| Network | Nothing is sent anywhere; the CSP blocks outbound connections |
+| Keyring delete | `--delete-credential` removes both the current and the pre-1.2 service name |
+
+## Roadmap / TODO
+
+- **Microsoft SSO support** for TU Wien mail (login.microsoftonline.com MFA) —
+  under evaluation; a follow-up variant or a shared engine within this one.
+- **Host-side TOTP generation** — currently Firefox generates the 6-digit code
+  from the seed fetched over native messaging; moving generation into the Rust
+  host would mean Firefox never touches the seed at all (defense in depth).
+- **Site-agnostic fork** for arbitrary websites is intentionally a separate
+  project, not a feature of this one.
 
 ## Notes
+
 Support of AI was used on this project.
 
 ## License
 
-UNLICENSED for now. Use at your own risk. I haven't audited this for security, and I'm not responsible if something breaks or data gets lost. You've been warned.
+MIT — see `LICENSE`. Not an official TU Wien tool; no security audit; provided
+AS IS.

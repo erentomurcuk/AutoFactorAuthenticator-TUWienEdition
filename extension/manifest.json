@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "TU Wien Auto 2FA",
-  "version": "1.1.0",
-  "description": "Automatically fills the Multi-Factor Authentication code for TU Wien login",
+  "name": "AutoTISS2FA",
+  "version": "1.2.0",
+  "description": "Automatically fills the Multi-Factor Authentication code for TU Wien (AutoFactorAuthenticator)",
   "browser_specific_settings": {
     "gecko": {
-      "id": "tuwien-auto-2fa@aGreatTUWienStudent",
+      "id": "autotiss2fa@autofactorauthenticator",
       "strict_min_version": "142.0",
       "data_collection_permissions": {
         "required": ["none"]
@@ -30,7 +30,7 @@
   ],
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "TU Wien Auto 2FA",
+    "default_title": "AutoTISS2FA",
     "default_icon": "icons/icon.svg"
   },
   "icons": {

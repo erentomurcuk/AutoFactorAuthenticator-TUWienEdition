@@ -42,15 +42,15 @@ can_build() {
   # Cross-compile cases we support: prebuilt binaries must exist.
   case "$target" in
     windows)
-      [ -f "$NATIVE_HOST_DIR/target/x86_64-pc-windows-msvc/release/tuwien-2fa-native.exe" ] || \
-      [ -f "$NATIVE_HOST_DIR/target/x86_64-pc-windows-gnu/release/tuwien-2fa-native.exe" ]
+      [ -f "$NATIVE_HOST_DIR/target/x86_64-pc-windows-msvc/release/autotiss2fa-native.exe" ] || \
+      [ -f "$NATIVE_HOST_DIR/target/x86_64-pc-windows-gnu/release/autotiss2fa-native.exe" ]
       ;;
     linux)
-      [ -f "$NATIVE_HOST_DIR/target/release/tuwien-2fa-native" ]
+      [ -f "$NATIVE_HOST_DIR/target/release/autotiss2fa-native" ]
       ;;
     macos)
-      [ -f "$NATIVE_HOST_DIR/target/x86_64-apple-darwin/release/tuwien-2fa-native" ] && \
-      [ -f "$NATIVE_HOST_DIR/target/aarch64-apple-darwin/release/tuwien-2fa-native" ]
+      [ -f "$NATIVE_HOST_DIR/target/x86_64-apple-darwin/release/autotiss2fa-native" ] && \
+      [ -f "$NATIVE_HOST_DIR/target/aarch64-apple-darwin/release/autotiss2fa-native" ]
       ;;
     *)
       return 1

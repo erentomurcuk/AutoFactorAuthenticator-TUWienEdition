@@ -1,13 +1,15 @@
 #!/bin/bash
 # AppImage entry point. Shows a GUI consent dialog on first run and writes the
-# Firefox native messaging manifest.
+# Firefox native messaging manifest. Double-clicking again afterwards reads
+# back the state instead of launching the stdio host (that would just hang on
+# an empty stdin, which is what the old "exec $BINARY" tail did).
 
 set -euo pipefail
 
 HERE="$(dirname "$(readlink -f "$0")")"
-BINARY="$HERE/usr/bin/tuwien-2fa-native"
+BINARY="$HERE/usr/bin/autotiss2fa-native"
 MANIFEST_DIR="$HOME/.mozilla/native-messaging-hosts"
-MANIFEST_FILE="$MANIFEST_DIR/com.tuwien.2fa.json"
+MANIFEST_FILE="$MANIFEST_DIR/com.autofactor.autotiss2fa.json"
 
 show_dialog() {
   local title="$1"
@@ -25,7 +27,10 @@ show_dialog() {
       *) kdialog --title="$title" --msgbox "$text" ;;
     esac
   else
-    echo "$title: $text"
+    echo "$title: $text" >&2
+    # No GUI tool: a question counts as declined.
+    [ "$type" = "question" ] && return 1
+    return 0
   fi
 }
 
@@ -33,11 +38,11 @@ install_manifest() {
   mkdir -p "$MANIFEST_DIR"
   cat > "$MANIFEST_FILE" << EOF
 {
-  "name": "com.tuwien.2fa",
-  "description": "Native host for TU Wien Auto 2FA",
+  "name": "com.autofactor.autotiss2fa",
+  "description": "Native host for AutoTISS2FA",
   "path": "$BINARY",
   "type": "stdio",
-  "allowed_extensions": ["tuwien-auto-2fa@aGreatTUWienStudent"]
+  "allowed_extensions": ["autotiss2fa@autofactorauthenticator"]
 }
 EOF
 }
@@ -45,7 +50,7 @@ EOF
 uninstall() {
   rm -f "$MANIFEST_FILE"
   "$BINARY" --delete-credential 2>/dev/null || true
-  show_dialog "TU Wien Auto 2FA" "Uninstall complete." info
+  show_dialog "AutoTISS2FA" "Uninstall complete." info
 }
 
 case "${1:-}" in
@@ -56,21 +61,34 @@ case "${1:-}" in
   --install)
     # force install without dialog
     install_manifest
-    show_dialog "TU Wien Auto 2FA" "Native host registered with Firefox." info
+    show_dialog "AutoTISS2FA" "Native host registered with Firefox." info
     exit 0
     ;;
 esac
 
-if [ ! -f "$MANIFEST_FILE" ]; then
-  show_dialog "TU Wien Auto 2FA" \
-    "TU Wien 2FA needs to register with Firefox.\n\nThis will create a configuration file that allows the Firefox extension to communicate with the native host.\n\nNo personal data is stored. Your TOTP seed will be saved securely in your system keyring.\n\nDo you want to proceed?" \
-    question
-
-  if [ $? -eq 0 ]; then
-    install_manifest
-    show_dialog "TU Wien Auto 2FA" "Installation complete!\n\nTU Wien 2FA is now ready to use with Firefox.\n\nTo uninstall later, open this app again." info
-  fi
+if [ ! -x "$BINARY" ]; then
+  show_dialog "AutoTISS2FA" "Native host binary missing inside the AppImage ($BINARY)." error
+  exit 1
 fi
 
-# By default, launch the native host (for Firefox to communicate with)
-exec "$BINARY"
+if [ -f "$MANIFEST_FILE" ]; then
+  if show_dialog "AutoTISS2FA" \
+    "AutoTISS2FA is already installed for this user.\n\nUnregister it? (this also deletes your TOTP seed from the keyring)" question; then
+    rm -f "$MANIFEST_FILE"
+    "$BINARY" --delete-credential 2>/dev/null || true
+    show_dialog "AutoTISS2FA" "Unregistered. The optional keyring seed has been deleted." info
+  fi
+  exit 0
+fi
+
+# zenity/kdialog return 1 when the user answers "No"; under `set -e` the call
+# must therefore be the test of an `if` - writing `$?` after it (the V1.1
+# pattern) never ran, since set -e killed the script on the No branch first.
+if show_dialog "AutoTISS2FA" \
+  "AutoTISS2FA needs to register with Firefox.\n\nThis will create a configuration file that allows the Firefox extension to communicate with the native host.\n\nNo personal data is stored. Your TOTP seed will be saved securely in your system keyring.\n\nDo you want to proceed?" \
+  question; then
+  install_manifest
+  show_dialog "AutoTISS2FA" "Installation complete!\n\nAutoTISS2FA is now registered with Firefox.\n\nRestart Firefox if it was open, then install the extension (.xpi). To uninstall later, run this app again." info
+else
+  show_dialog "AutoTISS2FA" "Installation cancelled. Nothing was written to your system." info
+fi

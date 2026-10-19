@@ -1,4 +1,8 @@
-const NATIVE_HOST = "com.tuwien.2fa";
+// Keep in sync with the host name in the native-messaging manifest written by
+// the installers (com.autofactor.autotiss2fa.json / the registry key on
+// Windows). A mismatch shows up as "Access to the specified native messaging
+// host is not allowed".
+const NATIVE_HOST = "com.autofactor.autotiss2fa";
 
 function base32Decode(str) {
   const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

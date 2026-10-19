@@ -7,17 +7,17 @@
   <key>CFBundleExecutable</key>
   <string>launcher.sh</string>
   <key>CFBundleIdentifier</key>
-  <string>com.tuwien.2fa</string>
+  <string>com.autofactor.autotiss2fa</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>TU Wien 2FA</string>
+  <string>AutoTISS2FA</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.1.0</string>
+  <string>1.2.0</string>
   <key>CFBundleVersion</key>
-  <string>1.1.0</string>
+  <string>1.2.0</string>
   <key>CFBundleIconFile</key>
   <string>icon.icns</string>
   <key>LSMinimumSystemVersion</key>

@@ -2,8 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-HOST_NAME="com.tuwien.2fa"
-BINARY_NAME="tuwien-2fa-native"
+HOST_NAME="com.autofactor.autotiss2fa"
+BINARY_NAME="autotiss2fa-native"
 
 detect_os() {
   case "$(uname -s)" in
@@ -83,6 +83,11 @@ main() {
   fi
   if [ -d "$SCRIPT_DIR/target/release" ]; then
     rm -f "$SCRIPT_DIR/target/release/$BINARY_NAME" "$SCRIPT_DIR/target/release/${BINARY_NAME}.exe"
+  fi
+
+  # Windows: also drop the registry pointer the installer writes.
+  if [ "$os" = "windows" ] && command -v reg >/dev/null 2>&1; then
+    reg delete "HKCU\\Software\\Mozilla\\NativeMessagingHosts\\$HOST_NAME" /f >/dev/null 2>&1 || true
   fi
 
   echo "Uninstall complete."

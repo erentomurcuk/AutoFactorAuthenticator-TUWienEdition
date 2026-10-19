@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build an AppImage for TU Wien Auto 2FA.
+# Build an AppImage for AutoTISS2FA (AutoFactorAuthenticator).
 
 set -euo pipefail
 
@@ -7,42 +7,46 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_ROOT="$(cd "$NATIVE_HOST_DIR/.." && pwd)"
 
-# Ensure Linux binary exists
-if [ ! -f "$NATIVE_HOST_DIR/target/release/tuwien-2fa-native" ]; then
-  echo "Error: Linux binary not found. Build with: cargo build --release" >&2
+BINARY="$NATIVE_HOST_DIR/target/release/autotiss2fa-native"
+APP_DIR="$SCRIPT_DIR/AppDir"
+RESULT="$SCRIPT_DIR/AutoTISS2FA-x86_64.AppImage"
+
+if [ ! -f "$BINARY" ]; then
+  echo "Error: Linux binary not found. Build with: (cd native-host && cargo build --release)" >&2
   exit 1
 fi
 
-# Convert SVG to PNG for desktop icon
+# Convert SVG to PNG for the desktop icon (optional - linuxdeploy ships an
+# iconless AppImage without it, which still works).
 if command -v python3 >/dev/null 2>&1; then
   python3 -c "
 import sys
 try:
     import cairosvg
-    cairosvg.svg2png(url='$PROJECT_ROOT/extension/icons/icon.svg', output_width=256, output_height=256, write_to='$SCRIPT_DIR/appimage/tuwien-2fa.png')
+    cairosvg.svg2png(url='$PROJECT_ROOT/extension/icons/icon.svg', output_width=256, output_height=256, write_to='$SCRIPT_DIR/appimage/autotiss2fa.png')
+    sys.exit(0)
 except Exception:
     sys.exit(1)
 " 2>/dev/null || true
 fi
 
 # Create AppDir
-APPDIR="$SCRIPT_DIR/AppDir"
-rm -rf "$APPDIR"
-mkdir -p "$APPDIR/usr/bin"
+rm -rf "$APP_DIR"
+mkdir -p "$APP_DIR/usr/bin"
 
-cp "$NATIVE_HOST_DIR/target/release/tuwien-2fa-native" "$APPDIR/usr/bin/"
-chmod 755 "$APPDIR/usr/bin/tuwien-2fa-native"
+cp "$BINARY" "$APP_DIR/usr/bin/"
+chmod 755 "$APP_DIR/usr/bin/autotiss2fa-native"
 
-cp "$SCRIPT_DIR/launcher.sh" "$APPDIR/usr/bin/"
-chmod 755 "$APPDIR/usr/bin/launcher.sh"
+cp "$SCRIPT_DIR/launcher.sh" "$APP_DIR/usr/bin/"
+chmod 755 "$APP_DIR/usr/bin/launcher.sh"
 
-cp "$SCRIPT_DIR/appimage/AppRun" "$APPDIR/"
-chmod 755 "$APPDIR/AppRun"
+cp "$SCRIPT_DIR/appimage/AppRun" "$APP_DIR/"
+chmod 755 "$APP_DIR/AppRun"
 
-cp "$SCRIPT_DIR/appimage/tuwien-2fa.desktop" "$APPDIR/"
+cp "$SCRIPT_DIR/appimage/autotiss2fa.desktop" "$APP_DIR/"
 
-if [ -f "$SCRIPT_DIR/appimage/tuwien-2fa.png" ]; then
-  cp "$SCRIPT_DIR/appimage/tuwien-2fa.png" "$APPDIR/"
+if [ -f "$SCRIPT_DIR/appimage/autotiss2fa.png" ]; then
+  cp "$SCRIPT_DIR/appimage/autotiss2fa.png" "$APP_DIR/"
 fi
 
 # Download linuxdeploy if not present
@@ -56,17 +60,26 @@ if [ ! -x "$LINUXDEPLOY" ]; then
   chmod +x "$LINUXDEPLOY"
 fi
 
-# Build AppImage
-"$LINUXDEPLOY" --appdir "$APPDIR" --output appimage
+# Build AppImage inside an isolated directory. The appimage output plugin
+# writes into its own current working directory, so cd'ing there gives us a
+# container with exactly one file. linuxdeploy names its result after the
+# desktop entry, and the script directory already contains the linuxdeploy
+# AppImage itself plus possibly earlier builds - finding the new one by
+# "-name '*.AppImage'" in $SCRIPT_DIR was a real race: it could pick the
+# linuxdeploy image (or a stale artifact) and mv it onto itself.
+OUT_DIR=$(mktemp -d)
+trap 'rm -rf "$OUT_DIR" "$APP_DIR"' EXIT
 
-# Move result to predictable name
-APPIMAGE=$(find "$SCRIPT_DIR" -maxdepth 1 -name '*.AppImage' | head -n1)
-if [ -n "$APPIMAGE" ]; then
-  mv "$APPIMAGE" "$SCRIPT_DIR/TUWien-Auto-2FA-x86_64.AppImage"
-  echo "Created: $SCRIPT_DIR/TUWien-Auto-2FA-x86_64.AppImage"
-else
-  echo "Error: AppImage build failed" >&2
+(
+  cd "$OUT_DIR"
+  "$LINUXDEPLOY" --appdir "$APP_DIR" --output appimage
+)
+
+BUILT=$(find "$OUT_DIR" -maxdepth 1 -type f -name '*.AppImage' | head -n1)
+if [ -z "$BUILT" ]; then
+  echo "Error: linuxdeploy produced no AppImage" >&2
   exit 1
 fi
 
-rm -rf "$APPDIR"
+mv -f "$BUILT" "$RESULT"
+echo "Created: $RESULT"

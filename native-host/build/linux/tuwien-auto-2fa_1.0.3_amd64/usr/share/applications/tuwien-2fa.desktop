@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=TU Wien 2FA
-Comment=Auto-fills TOTP codes for TU Wien login
-Exec=/opt/tuwien-2fa/launcher.sh
-Icon=tuwien-2fa
-Type=Application
-Categories=Utility;Security;
-Terminal=false
