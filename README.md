@@ -1,4 +1,4 @@
-# AutoTISS2FA
+# Auto Factor Authenticator
 
 **AutoFactorAuthenticator — TU Wien variant.**
 
