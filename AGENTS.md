@@ -137,6 +137,20 @@ Validation before pushing anything:
     on strip, delete the checked-in `linuxdeploy-x86_64.AppImage` and let
     `build-appimage.sh` download a fresh one — that is also what happens on
     any machine where it is simply missing.
+14. **`printf '\x%02x…'` is invalid bash** — `%` is not a hex digit, so the
+    escape is dropped with "missing hex digit for \x" and the length prefix
+    the host reads is garbage (`message too large`). This shipped as the
+    REAL cause of "An error has occurred / keyring daemon unreachable" in the
+    launcher's first-run probe even after the trap-9 fix. Bash printf also
+    cannot nest `%02x` inside `\x`; build the escapes into a format string
+    first and expand with a `%b` pass:
+    `esc=$(printf '\\x%02x\\x00\\x00\\x00' $len); printf '%b%s' "$esc" "$payload"`.
+15. **Never trust `target/release/<bin>` without a `test -x` check** in
+    packaging scripts after any interruption: twice today the final artifact
+    was absent while `cargo build` still reported "Finished" in 0.02 s
+    (fresh fingerprint, no relink). `build-deb.sh` guards it, but any tool
+    that just assumes the file will save a broken run. When in doubt:
+    `test -x target/release/autotiss2fa-native || cargo build --release`.
 
 ## 6. Protocol contract (extension ↔ host)
 

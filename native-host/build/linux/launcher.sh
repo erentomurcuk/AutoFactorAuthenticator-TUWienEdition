@@ -51,12 +51,16 @@ show_dialog() {
 check_dependencies() {
   # Send a real native-messaging frame (u32 LE length + JSON) for the "probe"
   # command. NoEntry counts as a pass: the daemon is reachable, just empty.
-  # The frame is printf'd straight into the pipe: a command substitution here
-  # would strip the trailing NUL byte of the length prefix.
+  # The frame is printf'd straight into the pipe, and the prefix is built in
+  # two steps because bash CANNOT nest "%02x" inside a "\x" escape
+  # ("\x%02x" -> "missing hex digit for \x" -> a corrupt frame on the wire).
+  # The %b pass expands the escapes AFTER building them; no command
+  # substitution touches the raw bytes, so no trailing NUL is ever stripped.
   local payload='{"command":"probe"}'
+  local esc
+  esc=$(printf '\\x%02x\\x00\\x00\\x00' "${#payload}")
   local resp
-  resp=$(printf '\x%02x\x%02x\x%02x\x%02x%s' \
-      "${#payload}" 0 0 0 "$payload" \
+  resp=$(printf '%b%s' "$esc" "$payload" \
       | "$BINARY_PATH" 2>/dev/null | tail -c +5) || true
   if ! printf '%s' "$resp" | grep -aq '"status"[[:space:]]*:[[:space:]]*"ok"'; then
     show_dialog "AutoTISS2FA" \
