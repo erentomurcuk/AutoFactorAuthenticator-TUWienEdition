@@ -11,6 +11,14 @@ VERSION="1.2.0"
 ARCH="amd64"
 PKG_NAME="autotiss2fa_${VERSION}_${ARCH}"
 
+# NOTE: dpkg control files do not allow comments; the dependency rationale
+# lives here. The host links ONLY libdbus-1.so.3 (readelf on the shipped
+# binary). The old "Depends: libsecret-1-0" was fictional - libsecret was
+# never linked, and a system WITH libsecret but WITHOUT dbus was still left
+# broken. Run-time keyring access needs a Secret Service provider (GNOME
+# Keyring, KDE Wallet or KeePassXC's Secret Service plugin); the Recommends
+# guarantees a GUI dialog tool exists.
+
 BINARY="$NATIVE_HOST_DIR/target/release/autotiss2fa-native"
 if [ ! -f "$BINARY" ]; then
   echo "Error: Linux binary not found. Build with: (cd native-host && cargo build --release)" >&2
@@ -56,12 +64,14 @@ fi
 
 # Build package
 if command -v dpkg-deb >/dev/null 2>&1; then
-  dpkg-deb --build "$BUILD_DIR"
-  mv "$SCRIPT_DIR/$PKG_NAME.deb" "$SCRIPT_DIR/autotiss2fa_${VERSION}_${ARCH}.deb"
+  # --root-owner-group: without it the package keeps the build user's
+  # uid:gid on every file, which lands on target systems with confusing
+  # ownership (dpkg's rootless-builds hint).
+  dpkg-deb --build --root-owner-group "$BUILD_DIR"
+  echo "Created: $SCRIPT_DIR/${PKG_NAME}.deb"
 else
   echo "Error: dpkg-deb not found. Install with: sudo apt install dpkg-dev" >&2
   exit 1
 fi
 
 rm -rf "$BUILD_DIR"
-echo "Created: $SCRIPT_DIR/autotiss2fa_${VERSION}_${ARCH}.deb"
