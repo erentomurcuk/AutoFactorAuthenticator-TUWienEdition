@@ -225,3 +225,6 @@ pnpm run lint        # 0 errors 0 warnings
   `.gitignore` template leftovers gone; unused `scripts/write-manifest.sh`
   and `scripts/cleanup.sh` deleted; version 1.2.0 everywhere; README +
   AGENTS.md rewritten.
+- Upgrades from ≤1.1 require a FULL uninstall+reinstall (README "Upgrading
+  from a pre-1.2 version"): identity rename means old host ↔ new extension
+  ID cannot connect.

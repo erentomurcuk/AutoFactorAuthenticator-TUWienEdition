@@ -44,6 +44,30 @@ Key properties:
   forks can coexist on one machine. Upgrading from the pre-1.2 name
   (`TU Wien Auto 2FA`) transparently cleans up the old entry.
 
+## Upgrading from a pre-1.2 version
+
+Update by **fully uninstalling, then installing the new version** — an in-place
+upgrade is not supported:
+
+1. Remove the seed first if you want a clean slate: open the extension popup →
+   *Remove Seed* (or skip this; the keychain entry under the old name is
+   deleted by the new uninstaller).
+2. Uninstall the old native host and uninstall/remove the old extension in
+   Firefox.
+   - macOS: open **TU Wien 2FA.app** → *Uninstall* → remove the app.
+   - Windows: *Settings → Apps → TU Wien Auto 2FA → Uninstall*.
+   - Linux: `sudo dpkg -r tuwien-auto-2fa` / `sudo rpm -e tuwien-auto-2fa`,
+     or `./TUWien-Auto-2FA-x86_64.AppImage --uninstall` for the AppImage.
+3. Install the 1.2.0 package (per-OS instructions below) and the fresh `.xpi`
+   (it is a *new* add-on — a new ID — so it installs as a separate entry).
+4. Re-paste your TOTP seed in the popup once.
+
+Why a full reinstall: 1.2 renames the identity of everything (extension ID,
+native-messaging host name, keyring service; and the Windows registration was
+written incorrectly in 1.1), so the old host is not compatible with the new
+extension ID and vice versa. On Windows this reinstall is what fixes the
+"app installed but the extension does not see it" bug.
+
 ## Requirements
 
 - Firefox 142 or newer (or a Chromium-compatible fork of this project — not a
