@@ -1,6 +1,6 @@
 {
   "name": "autotiss2fa",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "AutoTISS2FA — AutoFactorAuthenticator variant for the TU Wien login. Firefox extension + native messaging host.",
   "private": true,
   "license": "MIT",

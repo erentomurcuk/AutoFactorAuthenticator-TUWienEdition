@@ -1,5 +1,5 @@
 Name: autotiss2fa
-Version: 1.2.0
+Version: 1.2.1
 Release: 1
 Summary: Firefox extension for automatic TU Wien 2FA
 License: MIT

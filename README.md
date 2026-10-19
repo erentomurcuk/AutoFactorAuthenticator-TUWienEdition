@@ -60,7 +60,7 @@ upgrade is not supported:
    - Windows: *Settings → Apps → TU Wien Auto 2FA → Uninstall*.
    - Linux: `sudo dpkg -r tuwien-auto-2fa` / `sudo rpm -e tuwien-auto-2fa`,
      or `./TUWien-Auto-2FA-x86_64.AppImage --uninstall` for the AppImage.
-3. Install the 1.2.0 package (per-OS instructions below) and the fresh `.xpi`
+3. Install the 1.2.1 package (per-OS instructions below) and the fresh `.xpi`
    (it is a *new* add-on — a new ID — so it installs as a separate entry).
 4. Re-paste your TOTP seed in the popup once.
 
@@ -112,13 +112,13 @@ in Firefox separately.
 **Debian / Ubuntu**
 
 ```bash
-sudo dpkg -i autotiss2fa_1.2.0_amd64.deb
+sudo dpkg -i autotiss2fa_1.2.1_amd64.deb
 ```
 
 **Fedora / RHEL**
 
 ```bash
-sudo rpm -i autotiss2fa-1.2.0-1.x86_64.rpm
+sudo rpm -i autotiss2fa-1.2.1-1.x86_64.rpm
 ```
 
 **AppImage** (any distro)
@@ -179,7 +179,7 @@ cd native-host/build && bash build-packages.sh windows
 
 # Linux packaging
 cd native-host/build && bash build-packages.sh linux
-# → autotiss2fa_1.2.0_amd64.deb, autotiss2fa-1.2.0-1.x86_64.rpm,
+# → autotiss2fa_1.2.1_amd64.deb, autotiss2fa-1.2.1-1.x86_64.rpm,
 #   AutoTISS2FA-x86_64.AppImage
 ```
 

@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_HOST_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_ROOT="$(cd "$NATIVE_HOST_DIR/.." && pwd)"
 
-VERSION="1.2.0"
+VERSION="1.2.1"
 RELEASE="1"
 
 BINARY="$NATIVE_HOST_DIR/target/release/autotiss2fa-native"

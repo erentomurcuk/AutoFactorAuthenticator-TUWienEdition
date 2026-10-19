@@ -5,13 +5,13 @@
 > the work done. Add user-visible behaviour notes to the README instead of
 > duplicating them here; this file is for the *working system*, not for users.
 
-## 1. Identity (v1.2.0)
+## 1. Identity (v1.2.1)
 
 | Thing | Value |
 |---|---|
 | Brand / repo | **AutoFactorAuthenticator** |
 | This variant / app | **AutoTISS2FA** (the TU Wien login build) |
-| Version (all synced) | **1.2.0** |
+| Version (all synced) | **1.2.1** |
 | Rust crate + binary | `autotiss2fa-native` |
 | Native messaging host name | `com.autofactor.autotiss2fa` |
 | Firefox add-on ID | `autotiss2fa@autofactorauthenticator` |
@@ -216,7 +216,21 @@ pnpm run build
 - **Per-variant keyring labels** are already the pattern
   (`AutoTISS2FA` / any future fork) — keep it when forking.
 
-## 10. Change log (v1.2.0)
+## 10. Change log (v1.2.1)
+
+### 1.2.1
+
+- Version bump that carries the host-side `get_code` work + popup redesign +
+  new icon (all done in the same session, previously committed unpushed as
+  `a669fde`). Identity unchanged; upgrade 1.2.0 → 1.2.1 is a normal update,
+  only ≤1.1 needs the full uninstall/reinstall dance.
+- `build/windows/setup-and-build.ps1` added: one stop script for a fresh
+  Windows box — installs Git, Rustup/stable-msvc, VS Build Tools (VC++) and
+  Inno Setup 6.3+ via winget, clones/pulls the repo, `cargo build --release`,
+  stages and runs `build-exe.ps1`, and drops `AutoTISS2FA-Setup.exe` on the
+  Desktop. Re-runnable; every step is skipped when already done.
+
+### 1.2.0
 
 - Full rebrand: AutoFactorAuthenticator (repo) / AutoTISS2FA (this build);
   new add-on id, new host name, new binary/deb/rpm/AppImage/DMG/EXE names.

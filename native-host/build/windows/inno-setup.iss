@@ -1,6 +1,6 @@
 [Setup]
 AppName=AutoTISS2FA
-AppVersion=1.2.0
+AppVersion=1.2.1
 AppPublisher=AutoFactorAuthenticator
 AppComments=This is NOT an official tool by TU Wien. Provided AS IS.
 DefaultDirName={pf64}\AutoTISS2FA

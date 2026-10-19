@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AutoTISS2FA",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Automatically fills the Multi-Factor Authentication code for TU Wien (AutoFactorAuthenticator)",
   "browser_specific_settings": {
     "gecko": {
