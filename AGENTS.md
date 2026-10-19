@@ -170,7 +170,20 @@ pnpm run lint        # 0 errors 0 warnings
 ./target/release/autotiss2fa-native --delete-credential
 ```
 
-## 8. Roadmap (do not implement casually)
+## 8. AMO submission notes (recorded, not to be re-derived)
+
+- The add-on is plain JS/HTML/CSS; **no code generators, minifiers, bundlers
+  or template engines** — `web-ext build` only zips `extension/`. Answer
+  "No" to the processing-tools question on the submission form.
+- Because the extension declares `nativeMessaging`, provide reviewers a
+  link to this repo, highlighting `native-host/src/main.rs` (the full host
+  surface: 6 commands, no network, no telemetry) and point out the host
+  binary installs separately from the .xpi.
+- `pnpm run lint` must be 0 errors / 0 warnings *before* submitting; a
+  broken manifest.json poisons the whole lint (trap 6) and reviewers'
+  first impression.
+
+## 9. Roadmap (do not implement casually)
 
 - **Microsoft SSO (login.microsoftonline.com) 2FA** for TU Wien mail — the
   acknowledged next feature; may become its own variant rather than a
