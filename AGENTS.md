@@ -125,6 +125,16 @@ Validation before pushing anything:
     the host is a stdio server; double-clicking an already-installed AppImage
     that execs it blocks a terminal-less session until killed. Desktop
     entry-points show status and exit.
+12. **`dpkg-deb` control files are not shell-config files**: description
+    continuation lines must start with a single space, and `#` comments are
+    illegal inside `DEBIAN/control` (rationale goes in the build script).
+    Always build with `--root-owner-group`, or the installed files keep the
+    build user's uid:gid.
+13. **linuxdeploy's bundled strip goes stale against newer distro libcs**
+    (`.relr.dyn` rejected: `[0x13] unknown type`). If an AppImage build dies
+    on strip, delete the checked-in `linuxdeploy-x86_64.AppImage` and let
+    `build-appimage.sh` download a fresh one — that is also what happens on
+    any machine where it is simply missing.
 
 ## 6. Protocol contract (extension ↔ host)
 
@@ -184,6 +194,9 @@ pnpm run lint        # 0 errors 0 warnings
   AppRun consent-dialog `set -e` bug fixed (declining used to kill the
   script); AppRun no longer execs the stdio host after install; AppImage
   rename race gone (linuxdeploy output isolated in its own dir).
+- Linux packaging verified end-to-end on-device for 1.2.0 (deb + rpm +
+  AppImage built, contents + NEEDED libs + keyring round-trip checked);
+  fixes surfaced by the real build are in traps 12–13.
 - macOS: `@2x` icns sizes are real double-size renders; DMG no longer writes
   a fake hand-rolled `.DS_Store` (Finder layout applied on the mounted volume
   where possible; failures non-fatal and honest).
