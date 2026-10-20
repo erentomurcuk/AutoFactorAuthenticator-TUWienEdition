@@ -105,7 +105,9 @@ Validation before pushing anything:
    wherever the requirement appears. The compiler is **per-user by default**
    (`%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe`, what winget installs) and
    is on neither PATH nor under Program Files — both build scripts search that
-   path, the registry and `$ISCC`, and refuse versions < 6.3.
+   path, the registry and `$ISCC`. A readable version below 6.3 is refused;
+   an unreadable one only warns, because `FileVersionInfo` returns `0.0.0.0`
+   on some perfectly good 6.x installs (ISCC itself then rejects the script).
 4. **Every `@2x` icon must be a real double-size render**, not a copy of the
    same-size PNG; and the canonical iconset sizes are 16/32/128/256/512 —
    1024 only appears as `512@2x`. `iconutil` accepts extra sizes but validates
@@ -278,8 +280,9 @@ pnpm run build
   probing and no "ARM64 binary not found" noise. `inno-setup.iss` gates the
   ARM64 file + architecture behind `#ifdef Arm64` (`/DArm64` is passed only by
   `-Arm64` / `--arm64`). ISCC lookup now covers the per-user winget location
-  (`%LOCALAPPDATA%\Programs\Inno Setup 6`), the registry and `$ISCC`, and
-  rejects versions < 6.3.
+  (`%LOCALAPPDATA%\Programs\Inno Setup 6`), the registry and `$ISCC`; a
+  readable version < 6.3 is refused, an unreadable one only warns (some real
+  6.x installs report `0.0.0.0` via FileVersionInfo).
 
 ### 1.2.0
 

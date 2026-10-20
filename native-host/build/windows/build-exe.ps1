@@ -187,9 +187,41 @@ Already installed somewhere unusual? Point this script at it:
 Write-Host "ISCC:          $iscc"
 
 # Refuse to compile with an ancient Inno Setup: 'x64compatible' needs 6.3+.
-# (Reading version info can fail on exotic setups - never fail the build for it.)
-$fileVersion = $null
-try { $fileVersion = (Get-Item -LiteralPath $iscc).VersionInfo.FileVersion } catch { $fileVersion = $null }
+# Version detection is best-effort: some real 6.x installs report 0.0.0.0 (or
+# nothing) through FileVersionInfo, so an unreadable version must warn and
+# continue - ISCC itself still rejects a script that is too new for it.
+function Get-IsccVersion([string]$Path) {
+    try {
+        $v = (Get-Item -LiteralPath $Path).VersionInfo.FileVersion
+        if ($v -and ($v -match "^(\d+)\.(\d+)") -and ([int]$Matches[1] -gt 0)) { return $v }
+    }
+    catch { }
+
+    # Fallback: the version Inno Setup records in its uninstall key.
+    $keys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
+        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1"
+    )
+    foreach ($key in $keys) {
+        $props = Get-ItemProperty -Path $key -ErrorAction SilentlyContinue
+        if (-not $props) { continue }
+        $appPath = $props."Inno Setup: App Path"
+        if (-not $appPath) { continue }
+        $registered = Join-Path $appPath "ISCC.exe"
+        if (-not (Test-Path -LiteralPath $registered)) { continue }
+        try {
+            if ((Resolve-Path -LiteralPath $registered).Path -ne (Resolve-Path -LiteralPath $Path).Path) { continue }
+        }
+        catch { continue }
+        if ($props.DisplayVersion) { return [string]$props.DisplayVersion }
+        if ($props.InnoSetupVersion) { return [string]$props.InnoSetupVersion }
+    }
+
+    return $null
+}
+
+$fileVersion = Get-IsccVersion $iscc
 if ($fileVersion -and ($fileVersion -match "^(\d+)\.(\d+)")) {
     $major = [int]$Matches[1]
     $minor = [int]$Matches[2]
@@ -197,6 +229,10 @@ if ($fileVersion -and ($fileVersion -match "^(\d+)\.(\d+)")) {
         Write-Error "Inno Setup $fileVersion at $iscc is too old - 6.3 or newer is required (x64compatible / IsARM64)."
         exit 1
     }
+    Write-Host "ISCC version:  $fileVersion"
+}
+else {
+    Write-Host "ISCC version:  unknown (FileVersionInfo reported '$fileVersion'; skipping the 6.3 check - ISCC will refuse the script if it is too old)" -ForegroundColor Yellow
 }
 
 # --- compile ------------------------------------------------------------------
