@@ -9,18 +9,32 @@ UninstallDisplayIcon={app}\autotiss2fa-native.exe
 OutputBaseFilename=AutoTISS2FA-Setup
 Compression=lzma2
 SolidCompression=yes
-; NOTE: 'x64 arm64' boolean lists and the IsARM64 support function require
-; Inno Setup 6.3 or newer (2024). 6.0-6.2 will fail to compile this script.
-; 'x64compatible' replaces the now-deprecated 'x64' identifier.
+; NOTE: 'x64compatible' and the IsARM64 support function require Inno Setup 6.3
+; or newer (2024). 6.0-6.2 fail to compile this script. 'x64compatible'
+; replaces the now-deprecated 'x64' identifier.
+;
+; The build scripts pass /DArm64 only when the ARM64 host binary is being
+; shipped (build-exe.ps1 -Arm64 / build-exe.sh --arm64). Without it this is an
+; x64-only installer: one 64-bit binary, no ARM64 file reference at all.
+
+#ifdef Arm64
 ArchitecturesAllowed=x64compatible arm64
 ArchitecturesInstallIn64BitMode=x64compatible arm64
+#else
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+#endif
 WizardStyle=modern
 
 [Files]
-; x64 binary (default)
+#ifdef Arm64
+; dual-architecture build: pick the binary matching the CPU
 Source: "autotiss2fa-native-x64.exe"; DestDir: "{app}"; DestName: "autotiss2fa-native.exe"; Check: not IsARM64; Flags: ignoreversion
-; ARM64 binary
 Source: "autotiss2fa-native-arm64.exe"; DestDir: "{app}"; DestName: "autotiss2fa-native.exe"; Check: IsARM64; Flags: ignoreversion
+#else
+; x64-only build (ARM64 Windows runs this binary through x64 emulation)
+Source: "autotiss2fa-native-x64.exe"; DestDir: "{app}"; DestName: "autotiss2fa-native.exe"; Flags: ignoreversion
+#endif
 Source: "launcher.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.txt"; DestDir: "{app}"; Flags: ignoreversion
 

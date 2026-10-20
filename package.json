@@ -6,8 +6,10 @@
   "license": "MIT",
   "scripts": {
     "dev": "web-ext run --source-dir extension",
-    "build": "web-ext build --source-dir extension --overwrite-dest",
+    "build": "web-ext build --source-dir extension --overwrite-dest --filename=autotiss2fa-{version}.xpi",
     "lint": "web-ext lint --source-dir extension",
+    "sign": "node --env-file-if-exists=.env node_modules/web-ext/bin/web-ext.js sign --source-dir extension --channel=listed",
+    "sign:unlisted": "node --env-file-if-exists=.env node_modules/web-ext/bin/web-ext.js sign --source-dir extension --channel=unlisted",
     "install-host": "cd native-host && bash install.sh",
     "uninstall-host": "cd native-host && bash uninstall.sh"
   },

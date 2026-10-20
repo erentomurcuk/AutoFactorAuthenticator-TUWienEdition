@@ -13,10 +13,12 @@
 #   -SkipDeps          skip the toolchain steps (already set up machine)
 #   -SourceDir X       build from an existing checkout instead of cloning
 #   -Arm64             additionally build the aarch64 binary (installer
-#                      AutoTISS2FA-Setup.exe then covers both architectures)
+#                      AutoTISS2FA-Setup.exe then covers both architectures);
+#                      without it the installer is x64-only
 #
-# NOTE: inno-setup.iss requires Inno Setup 6.3+ ("x64compatible arm64" and
-# IsARM64) - winget installs a current 6.x, which is fine.
+# NOTE: inno-setup.iss requires Inno Setup 6.3+ ('x64compatible', IsARM64) -
+# winget installs a current 6.x, which is fine. The packaging step finds a
+# per-user install at %LOCALAPPDATA%\Programs\Inno Setup 6 as well.
 
 #Requires -RunAsAdministrator
 param(
@@ -149,10 +151,16 @@ finally { Pop-Location }
 
 # --- 8) Package with Inno Setup ---------------------------------------------------
 # build-exe.ps1 stages the binaries under arch-specific names, writes
-# README.txt and compiles inno-setup.iss
+# README.txt and compiles inno-setup.iss. Without -Arm64 it never looks for
+# the aarch64 binary, so the result is an x64-only installer.
 Stage "Inno Setup packaging"
-powershell -NoProfile -ExecutionPolicy Bypass `
-  -File (Join-Path $SourceDir "native-host\build\windows\build-exe.ps1")
+$buildExe = Join-Path $SourceDir "native-host\build\windows\build-exe.ps1"
+if ($Arm64) {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $buildExe -Arm64
+}
+else {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $buildExe
+}
 if ($LASTEXITCODE -ne 0) { Write-Error "build-exe.ps1 failed" }
 
 # --- 9) Deliver ---------------------------------------------------------------------

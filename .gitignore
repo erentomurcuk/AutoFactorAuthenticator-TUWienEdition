@@ -6,6 +6,11 @@ node_modules/
 *.swo
 .DS_Store
 
+# AMO API credentials for `pnpm run sign` (.env.example is the tracked template)
+.env
+.env.*
+!.env.example
+
 # web-ext build & upload state
 web-ext-artifacts/
 extension/.amo-upload-uuid

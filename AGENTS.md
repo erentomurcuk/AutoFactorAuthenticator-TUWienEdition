@@ -58,12 +58,15 @@ Commands:
 
 ```bash
 pnpm run dev      # web-ext run on a temp profile
-pnpm run build    # → web-ext-artifacts/…zip  (delete after a release)
+pnpm run build    # → web-ext-artifacts/autotiss2fa-<version>.xpi (delete after a release)
 pnpm run lint     # web-ext lint; MUST be clean: 0 errors, 0 warnings
+pnpm run sign     # AMO --channel=listed (review); keys from .env (git-ignored, auto-loaded)
+pnpm run sign:unlisted   # instant self-signing, no review, not installable from AMO
 pnpm run install-host / uninstall-host
 
 cd native-host && cargo build --release   # the Linux/mac/MSYS build
 cd native-host/build && bash build-packages.sh linux   # installers
+cd native-host/build/windows && bash build-exe.sh      # → x64-only Setup.exe (--arm64 for dual-arch)
 ```
 
 Validation before pushing anything:
@@ -97,9 +100,12 @@ Validation before pushing anything:
    itself be the `if` condition. Writing `show_dialog …; if [ $? -eq 0 ]` is
    dead code on the very branch it was written for (the v1.1 AppRun did
    exactly that). Same shape anywhere a dialog/CLI returns rc-as-answer.
-3. **Inno Setup 6.3+ is required** for `IsARM64` and the boolean
-   `ArchitecturesAllowed=x64compatible arm64`. 6.0–6.2 fail to compile; say so
-   wherever the requirement appears.
+3. **Inno Setup 6.3+ is required** for `x64compatible` (and for `IsARM64`,
+   which only the dual-arch build uses). 6.0–6.2 fail to compile; say so
+   wherever the requirement appears. The compiler is **per-user by default**
+   (`%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe`, what winget installs) and
+   is on neither PATH nor under Program Files — both build scripts search that
+   path, the registry and `$ISCC`, and refuse versions < 6.3.
 4. **Every `@2x` icon must be a real double-size render**, not a copy of the
    same-size PNG; and the canonical iconset sizes are 16/32/128/256/512 —
    1024 only appears as `512@2x`. `iconutil` accepts extra sizes but validates
@@ -218,6 +224,21 @@ pnpm run build
 - `pnpm run lint` must be 0 errors / 0 warnings *before* submitting; a
   broken manifest.json poisons the whole lint (trap 6) and reviewers'
   first impression.
+- `pnpm run build` emits `web-ext-artifacts/autotiss2fa-<version>.xpi`
+  (`--filename=autotiss2fa-{version}.xpi`, version read from the manifest), and
+  that file is what AMO gets: by hand at
+  <https://addons.mozilla.org/developers/>, or via `pnpm run sign`
+  (`--channel=listed`, i.e. review) / `pnpm run sign:unlisted`. The API
+  credentials live in `.env` (git-ignored, template `.env.example`), which the
+  sign scripts load with `--env-file-if-exists=.env`; Node 22.9+ is required
+  for that flag.
+- `.env` holds secrets: it is git-ignored, `.env.example` is the tracked
+  template, and neither the keys nor the signed artifact may be committed.
+- Re-signing a version that AMO already has fails with `409 Version <x>
+  already exists` (the version, not the bytes, is unique). Do **not** bump the
+  version just to get a "fresh" signature; fetch the already-signed file from
+  `https://addons.mozilla.org/api/v5/addons/addon/<guid>/versions/?filter=all_with_unlisted`
+  (JWT auth with the `.env` credentials) and hand that out.
 
 ## 9. Roadmap (do not implement casually)
 
@@ -243,6 +264,22 @@ pnpm run build
   Inno Setup 6.3+ via winget, clones/pulls the repo, `cargo build --release`,
   stages and runs `build-exe.ps1`, and drops `AutoTISS2FA-Setup.exe` on the
   Desktop. Re-runnable; every step is skipped when already done.
+- Extension packaging now emits an installable `.xpi` instead of a `.zip`:
+  `pnpm run build` → `web-ext-artifacts/autotiss2fa-1.2.1.xpi` (filename
+  template `autotiss2fa-{version}.xpi`, version from the manifest), plus
+  `pnpm run sign` (AMO listed/review) and `pnpm run sign:unlisted`
+  (instant self-signing). Credentials come from `.env` (git-ignored, loaded via
+  `--env-file-if-exists`; tracked template `.env.example`).
+- 1.2.1 is already signed on the unlisted channel (file id 5141356,
+  sha256 `bdfba59c…fbb53`); its payload is byte-identical to `extension/`
+  except manifest whitespace. Re-running `sign` returns 409 — see §8.
+- Windows installer is **x64-only by default** (`build-exe.ps1` /
+  `build-exe.sh`, and `setup-and-build.ps1` without `-Arm64`): no ARM64
+  probing and no "ARM64 binary not found" noise. `inno-setup.iss` gates the
+  ARM64 file + architecture behind `#ifdef Arm64` (`/DArm64` is passed only by
+  `-Arm64` / `--arm64`). ISCC lookup now covers the per-user winget location
+  (`%LOCALAPPDATA%\Programs\Inno Setup 6`), the registry and `$ISCC`, and
+  rejects versions < 6.3.
 
 ### 1.2.0
 

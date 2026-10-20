@@ -155,10 +155,61 @@ It refuses to run without cargo and prints the reason.
 ```bash
 pnpm install
 pnpm run dev       # runs the extension in a temporary Firefox profile
+pnpm run lint      # must stay at 0 errors / 0 warnings
+pnpm run build     # → web-ext-artifacts/autotiss2fa-1.2.1.xpi
 ```
 
-Or load it manually: `about:debugging#/runtime/this-firefox` → **Load
-Temporary Add-on...** → pick `extension/manifest.json`.
+The artifact is an ordinary ZIP named `.xpi`; the filename template
+`autotiss2fa-{version}.xpi` takes the version from `extension/manifest.json`,
+so it cannot drift from the release.
+
+#### Load it locally
+
+Unsigned builds install **temporarily** only (they disappear when Firefox
+restarts):
+
+```bash
+open -a Firefox "about:debugging#/runtime/this-firefox"
+```
+
+Then **Load Temporary Add-on...** → pick `extension/manifest.json` (or the
+built `.xpi`). For a permanent unsigned install you need Firefox Developer
+Edition / Nightly with `xpinstall.signatures.required = false` in
+`about:config`, then `about:addons` → gear → **Install Add-on From File...**.
+
+#### Submit for signing / AMO approval
+
+1. Create API credentials at
+   <https://addons.mozilla.org/developers/addon/api/key/> (JWT issuer + secret)
+   and drop them into `.env` in the repo root — it is git-ignored and loaded
+   automatically by the sign scripts (fresh clone: `cp .env.example .env`):
+
+   ```dotenv
+   WEB_EXT_API_KEY=user:12345678:90
+   WEB_EXT_API_SECRET=…
+   ```
+
+2. Upload the package; `listed` puts it in the human review queue:
+
+   ```bash
+   pnpm run sign          # = --channel=listed
+   ```
+
+   (Node 22.9+ is needed for the sign scripts, which use
+   `--env-file-if-exists`; on older Node export the two variables and run
+   `pnpm exec web-ext sign --source-dir extension --channel=listed` instead.)
+
+   Add `--approval-timeout=0` (`pnpm run sign --approval-timeout=0`) to return
+   immediately instead of blocking until a reviewer finishes. Use
+   `pnpm run sign:unlisted` only for self-hosted/GitHub-release builds: it is
+   signed instantly without review and is *not* installable from AMO.
+   You can also upload `web-ext-artifacts/autotiss2fa-1.2.1.xpi` by hand at
+   <https://addons.mozilla.org/developers/> — same file, no CLI needed.
+3. The very first listed submission goes through the web form (name, summary,
+   screenshots); later versions can be pushed with `pnpm run sign`.
+4. After approval, install the AMO-signed `.xpi` permanently via
+   `about:addons` → gear → **Install Add-on From File...**, or
+   `open web-ext-artifacts/autotiss2fa-1.2.1.xpi`.
 
 ### 3. Save your TOTP seed
 
@@ -172,10 +223,16 @@ Click the extension icon in the toolbar, paste your base32 TOTP secret, hit
 cd native-host/build && bash build-packages.sh macos
 # → native-host/build/macos/AutoTISS2FA.dmg
 
-# Windows EXE (needs Inno Setup 6.3+, NOT 6.0-6.2: the .iss uses the
-# IsARM64 function and the boolean architecture list)
+# Windows EXE (needs Inno Setup 6.3+, NOT 6.0-6.2: the .iss uses
+# 'x64compatible' and, for the dual-arch build, IsARM64)
 cd native-host/build && bash build-packages.sh windows
-# → native-host/build/windows/AutoTISS2FA-Setup.exe   (x64 + ARM64 in one)
+# → native-host/build/windows/AutoTISS2FA-Setup.exe   (x64 only)
+
+# ...or directly, from Windows (PowerShell):
+#   powershell -ExecutionPolicy Bypass -File native-host/build/windows/build-exe.ps1
+#   powershell -ExecutionPolicy Bypass -File native-host/build/windows/build-exe.ps1 -Arm64
+# The x64-only build needs just the x86_64 host binary; -Arm64 / --arm64
+# additionally ships the aarch64 binary (requires building that target).
 
 # Linux packaging
 cd native-host/build && bash build-packages.sh linux
