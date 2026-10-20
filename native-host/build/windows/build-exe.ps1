@@ -235,19 +235,49 @@ else {
     Write-Host "ISCC version:  unknown (FileVersionInfo reported '$fileVersion'; skipping the 6.3 check - ISCC will refuse the script if it is too old)" -ForegroundColor Yellow
 }
 
+# Remove a stale artifact first, so a failed compile cannot "succeed" by
+# leaving yesterday's installer in place.
+Remove-Item -LiteralPath $SetupExe -ErrorAction SilentlyContinue
+
 # --- compile ------------------------------------------------------------------
-$issArgs = @()
+# /O pins the output directory. Without it ISCC honours OutputDir from the
+# .iss (we do not set one), and depending on how it is launched the artifact
+# can land in the CWD or an Output\ subfolder instead of next to the script.
+$issArgs = @("/O$ScriptDir")
 if ($Arm64) { $issArgs += "/DArm64" }
 $issArgs += $IssPath
 
 & $iscc @issArgs
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Inno Setup compiler failed (exit code $LASTEXITCODE)"
-    exit $LASTEXITCODE
+$isccExit = $LASTEXITCODE
+if ($null -ne $isccExit -and $isccExit -ne 0) {
+    Write-Error "Inno Setup compiler failed (exit code $isccExit)"
+    exit $isccExit
 }
 
 if (-not (Test-Path -LiteralPath $SetupExe)) {
-    Write-Error "Expected output $SetupExe was not produced"
+    $searched = @($ScriptDir, (Get-Location).Path, (Join-Path (Get-Location).Path "Output")) |
+        Select-Object -Unique
+    $found = @(
+        foreach ($dir in $searched) {
+            if (Test-Path -LiteralPath $dir) {
+                Get-ChildItem -LiteralPath $dir -Filter "*.exe" -File -ErrorAction SilentlyContinue |
+                    Select-Object -ExpandProperty FullName
+            }
+        }
+    )
+    $foundText = if ($found.Count -gt 0) { $found -join "; " } else { "(none)" }
+    [Console]::Error.WriteLine(@"
+ISCC reported success but did not produce:
+  $SetupExe
+
+ISCC exit code:  $isccExit
+Directories:     $($searched -join '; ')
+.exe files seen: $foundText
+
+If the file was written elsewhere, check the ISCC output above; otherwise
+run ISCC directly to see the full log:
+  & '$iscc' /O'$ScriptDir' '$IssPath'
+"@)
     exit 1
 }
 

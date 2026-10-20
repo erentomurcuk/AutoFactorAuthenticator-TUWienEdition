@@ -282,7 +282,10 @@ pnpm run build
   `-Arm64` / `--arm64`). ISCC lookup now covers the per-user winget location
   (`%LOCALAPPDATA%\Programs\Inno Setup 6`), the registry and `$ISCC`; a
   readable version < 6.3 is refused, an unreadable one only warns (some real
-  6.x installs report `0.0.0.0` via FileVersionInfo).
+  6.x installs report `0.0.0.0` via FileVersionInfo). Both scripts pass
+  `/O<dir>` so the artifact always lands next to the `.iss`, delete a stale
+  `AutoTISS2FA-Setup.exe` first, and print the searched dirs if ISCC succeeds
+  without writing anything.
 
 ### 1.2.0
 

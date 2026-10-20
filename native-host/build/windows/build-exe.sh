@@ -127,14 +127,29 @@ if [ -z "$ISCC_BIN" ]; then
 fi
 echo "ISCC:          $ISCC_BIN"
 
+# Remove a stale artifact first, so a failed compile cannot "succeed" by
+# leaving yesterday's installer in place.
+rm -f "$SCRIPT_DIR/AutoTISS2FA-Setup.exe"
+
+# /O pins the output directory: without it ISCC can place the artifact in the
+# CWD (or an Output/ subfolder) instead of next to the .iss. Under Git Bash the
+# path is converted to a Windows path first, otherwise MSYS would hand ISCC a
+# /c/Users/... style argument.
+OUT_DIR="$SCRIPT_DIR"
+if command -v cygpath >/dev/null 2>&1; then
+  OUT_DIR="$(cygpath -w "$SCRIPT_DIR")"
+fi
+
 if [ "$ARM64" -eq 1 ]; then
-  "$ISCC_BIN" /DArm64 "$ISS"
+  "$ISCC_BIN" "/O$OUT_DIR" /DArm64 "$ISS"
 else
-  "$ISCC_BIN" "$ISS"
+  "$ISCC_BIN" "/O$OUT_DIR" "$ISS"
 fi
 
 if [ ! -f "$SCRIPT_DIR/AutoTISS2FA-Setup.exe" ]; then
-  echo "Error: expected $SCRIPT_DIR/AutoTISS2FA-Setup.exe was not produced" >&2
+  echo "Error: ISCC reported success but did not produce $SCRIPT_DIR/AutoTISS2FA-Setup.exe" >&2
+  echo "Searched: $SCRIPT_DIR, $PWD, $PWD/Output" >&2
+  ls -l "$SCRIPT_DIR"/*.exe 2>/dev/null | sed 's/^/  /' >&2 || echo "  (no .exe in $SCRIPT_DIR)" >&2
   exit 1
 fi
 
